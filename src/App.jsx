@@ -1,19 +1,130 @@
 import React,{useState,useEffect,useMemo,useRef}from"react";
 
-// ── STORAGE ──────────────────────────────────────────────────────────────────
-const K={c:"ncc_c",d:"ncc_d",s:"ncc_s",sp:"ncc_sp",ak:"ncc_aviation_key"};
-const dbGet=async k=>{try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch{return null}};
-const dbSet=async(k,v)=>{try{await window.storage.set(k,JSON.stringify(v))}catch(e){console.error(k,e)}};
+import{createClient}from"@supabase/supabase-js";
+
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SUPA_URL="https://uqafkwmtwlooiituspas.supabase.co";
+const SUPA_KEY="sb_publishable_kJo4kjKyp7KaiT3v0fFRqQ_IPP_GuW7";
+const supa=createClient(SUPA_URL,SUPA_KEY);
+
+// ── STORAGE (sostituisce window.storage) ──────────────────────────────────────
 const loadAll=async()=>{
-  const[c,d,s,sp]=await Promise.all([dbGet(K.c),dbGet(K.d),dbGet(K.s),dbGet(K.sp)]);
-  return{clienti:c||[],driver:d||[],servizi:s||[],spese:sp||[],found:!!(c||d||s||sp)};
+  try{
+    const[rc,rd,rs,rsp]=await Promise.all([
+      supa.from("committenti").select("*").order("nome"),
+      supa.from("driver").select("*").order("cognome"),
+      supa.from("servizi").select("*").order("data",{ascending:false}),
+      supa.from("spese").select("*").order("data",{ascending:false}),
+    ]);
+    const clienti=(rc.data||[]).map(r=>({
+      id:r.id,nome:r.nome,piva:r.piva||"",cf:r.cf||"",
+      email:r.email||"",telefono:r.telefono||"",
+      referente:r.referente||"",indirizzo:r.indirizzo||"",note:r.note||"",
+    }));
+    const driver=(rd.data||[]).map(r=>({
+      id:r.id,
+      nome:r.nome_completo||((r.nome||"")+" "+(r.cognome||"")).trim(),
+      genere:r.genere||"F",
+      modello:r.modello||"",targa:r.targa||"",
+      telefono:r.telefono||"",email:r.email||"",
+      scadBollo:r.scad_bollo||"",scadPatente:r.scad_patente||"",
+      scadAss:r.scad_assicurazione||"",scadRev:r.scad_revisione||"",
+      note:r.note||"",
+    }));
+    const servizi=(rs.data||[]).map(r=>({
+      id:r.id,data:r.data||"",ora:r.ora||"",
+      tipo:r.tipo||"trasferimento",oreDisp:r.ore_disp||2,
+      committenteId:r.committente_id||"",driverId:r.driver_id||"",
+      nomeUtente:r.nome_passeggero||"",telefonoUtente:r.telefono_passeggero||"",
+      numeroVolo:r.numero_volo||"",pickup:r.pickup||"",dropoff:r.dropoff||"",
+      passeggeri:r.passeggeri||1,bagagli:r.bagagli||0,
+      prezzo:r.prezzo||"",prezzoDriver:r.prezzo_driver||"",
+      ivaSeparata:r.iva_separata||false,metodoPagamento:r.metodo_pagamento||"",
+      dataPagamento:r.data_pagamento||"",dataFattura:r.data_fattura||"",
+      inFattura:r.in_fattura||false,durataManuale:r.durata_manuale||null,
+      note:r.note||"",
+    }));
+    const spese=(rsp.data||[]).map(r=>({
+      id:r.id,tipo:r.tipo||"",data:r.data||"",
+      descrizione:r.descrizione||"",importo:r.importo||"",
+      aliqIva:r.aliq_iva||"22",driverId:r.driver_id||"",
+      isQuota:r.is_quota||false,quotaNum:r.quota_num||null,
+      quotaTot:r.quota_tot||null,quotaManuale:r.quota_manuale||false,
+      anniAmmort:r.anni_ammort||3,pctAmmort:r.pct_ammort||25,
+      ivaCreditoFull:r.iva_credito_full||0,
+      note:r.note||"",
+    }));
+    return{clienti,driver,servizi,spese,found:true};
+  }catch(e){
+    console.error("loadAll error",e);
+    return{clienti:[],driver:[],servizi:[],spese:[],found:false};
+  }
 };
-const saveAll=async(c,d,s,sp)=>{
-  await dbSet(K.c,c);await dbSet(K.d,d);await dbSet(K.s,s);await dbSet(K.sp,sp);
+
+const saveAll=async(clienti,driver,servizi,spese)=>{
+  if(clienti.length){
+    await supa.from("committenti").upsert(clienti.map(r=>({
+      id:r.id,nome:r.nome,piva:r.piva||null,cf:r.cf||null,
+      email:r.email||null,telefono:r.telefono||null,
+      referente:r.referente||null,indirizzo:r.indirizzo||null,note:r.note||null,
+    })));
+  }
+  if(driver.length){
+    await supa.from("driver").upsert(driver.map(r=>{
+      const parti=(r.nome||"").trim().split(" ");
+      const nome=parti[0]||"";
+      const cognome=parti.slice(1).join(" ")||"";
+      return{
+        id:r.id,nome,cognome,nome_completo:r.nome,
+        genere:r.genere||"F",
+        modello:r.modello||null,targa:r.targa||null,
+        telefono:r.telefono||null,email:r.email||null,
+        scad_bollo:r.scadBollo||null,scad_patente:r.scadPatente||null,
+        scad_assicurazione:r.scadAss||null,scad_revisione:r.scadRev||null,
+        note:r.note||null,
+      };
+    }));
+  }
+  if(servizi.length){
+    await supa.from("servizi").upsert(servizi.map(r=>({
+      id:r.id,data:r.data||null,ora:r.ora||null,
+      tipo:r.tipo||"trasferimento",ore_disp:r.oreDisp||null,
+      committente_id:r.committenteId||null,driver_id:r.driverId||null,
+      nome_passeggero:r.nomeUtente||null,telefono_passeggero:r.telefonoUtente||null,
+      numero_volo:r.numeroVolo||null,pickup:r.pickup||null,dropoff:r.dropoff||null,
+      passeggeri:r.passeggeri||1,bagagli:r.bagagli||0,
+      prezzo:r.prezzo?parseFloat(r.prezzo):null,
+      prezzo_driver:r.prezzoDriver?parseFloat(r.prezzoDriver):null,
+      iva_separata:r.ivaSeparata||false,
+      metodo_pagamento:r.metodoPagamento||null,
+      data_pagamento:r.dataPagamento||null,
+      data_fattura:r.dataFattura||null,
+      in_fattura:r.inFattura||false,
+      durata_manuale:r.durataManuale||null,
+      note:r.note||null,
+    })));
+  }
+  if(spese.length){
+    await supa.from("spese").upsert(spese.map(r=>({
+      id:r.id,tipo:r.tipo||null,data:r.data||null,
+      descrizione:r.descrizione||null,
+      importo:r.importo?parseFloat(r.importo):null,
+      aliq_iva:r.aliqIva||null,driver_id:r.driverId||null,
+      is_quota:r.isQuota||false,quota_num:r.quotaNum||null,
+      quota_tot:r.quotaTot||null,quota_manuale:r.quotaManuale||false,
+      anni_ammort:r.anniAmmort||null,pct_ammort:r.pctAmmort||null,
+      iva_credito_full:r.ivaCreditoFull||null,
+      note:r.note||null,
+    })));
+  }
+};
+
+const deleteRecord=async(table,id)=>{
+  await supa.from(table).delete().eq("id",id);
 };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-const uid=()=>Math.random().toString(36).slice(2,9).toUpperCase();
+const uid=()=>String(Math.floor(100000+Math.random()*900000));
 const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n||0);
 const today=()=>new Date().toISOString().slice(0,10);
 const isExp=d=>d&&new Date(d)<new Date();
@@ -131,6 +242,7 @@ const calcIRPEF=base=>{
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
 function Home({servizi,spese,anno,tutteSpese}){
+  const [showSpeseDett,setShowSpeseDett]=useState(false);
   const st=useMemo(()=>{
     const pag=servizi.filter(s=>s.dataPagamento);
     const tot=pag.reduce((a,s)=>a+prezzoLordo(s),0);
@@ -140,23 +252,27 @@ function Home({servizi,spese,anno,tutteSpese}){
     const iva=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+ivaS(s),0);
     const dichNetto=dich-iva;
     const ts=spese||[];
-    const totSp=ts.reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
+    const totSp=ts.filter(s=>s.tipo!=="inps_anno_prec"&&s.tipo!=="detrazioni_19"&&s.tipo!=="perdita_anno_prec").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
     const commB=ts.filter(s=>s.tipo==="comm_bon").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
     const inpsPre=ts.filter(s=>s.tipo==="inps_anno_prec").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
+    const perditaPre=ts.filter(s=>s.tipo==="perdita_anno_prec").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
     const impDet=ts.filter(s=>s.tipo==="detrazioni_19").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
     const det19=impDet*0.19;
-    const baseOrd=Math.max(0,dichNetto-totSp-inpsPre);
+    const baseOrd=Math.max(0,dichNetto-totSp-inpsPre-perditaPre);
     const irpef=calcIRPEF(baseOrd);
     const irpefN=Math.max(0,irpef-det19);
     const inps=Math.min(baseOrd,113520)*0.2672;
-    const baseForf=tot*0.67;
+    const baseForf=dich*0.67;
     const detIRPEF=[
       {label:"fino a 28.000 (23%)",base:Math.min(Math.max(0,baseOrd),28000),a:.23},
       {label:"28.001-50.000 (35%)",base:Math.min(Math.max(0,baseOrd-28000),22000),a:.35},
       {label:"oltre 50.000 (43%)",base:Math.max(0,baseOrd-50000),a:.43},
     ].filter(s=>s.base>0);
     const allSp=tutteSpese||[];
-    const ivaCred=allSp.reduce((a,s)=>{const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
+    const ivaCred=allSp.reduce((a,s)=>{
+      if(s.isQuota){return a+(parseFloat(s.ivaCreditoFull)||0);}
+      const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al));
+    },0);
     const ivaNet=iva-ivaCred;
     // IVA cumulativa: il credito non usato si riporta al trimestre successivo
     const trim=(()=>{
@@ -164,7 +280,10 @@ function Home({servizi,spese,anno,tutteSpese}){
       return TRIM.map(t=>{
         const mOk=d=>t.months.includes(parseInt(d?.slice(5,7)));
         const deb=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)&&mOk(s.dataPagamento)).reduce((a,s)=>a+ivaS(s),0);
-        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
+        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{
+          if(s.isQuota){return a+(parseFloat(s.ivaCreditoFull)||0);}
+          const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al));
+        },0);
         const saldo=deb-(cred+riporto);
         const daVersare=Math.max(0,saldo);
         const nuovoCred=Math.max(0,-saldo);
@@ -187,7 +306,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       const ded=b.quote.filter(q=>q.anno<=annoC).reduce((a,q)=>a+q.imp,0);
       return{...b,ded,res:b.totale-ded,future:b.quote.filter(q=>q.anno>annoC).sort((a,z)=>a.anno-z.anno)};
     }).filter(b=>b.totale>0);
-    return{tot,xm,dich,dichNetto,iva,ivaCred,ivaNet,totSp,commB,inpsPre,det19,impDet,baseOrd,irpef,irpefN,inps,tassaOrd:irpefN+inps,baseForf,tassaForf:baseForf*0.15,detIRPEF,trim,ammort,annoC};
+    return{tot,xm,dich,dichNetto,iva,ivaCred,ivaNet,totSp,commB,inpsPre,perditaPre,det19,impDet,baseOrd,irpef,irpefN,inps,tassaOrd:irpefN+inps,baseForf,tassaForf:baseForf*0.15,detIRPEF,trim,ammort,annoC};
   },[servizi,spese,tutteSpese]);
 
   const Row=({l,v,s})=><div style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #1e2435"}}>
@@ -213,7 +332,7 @@ function Home({servizi,spese,anno,tutteSpese}){
         <Row l="IVA 10% a debito" v={fmt(st.iva)}/>
       </Card>
       <Card title="Regime Forfettario ATECO 49.33.20" col="#a78bfa">
-        <Row l="Ricavi lordi" v={fmt(st.tot)}/>
+        <Row l="Ricavi dichiarati (bonifico+carta)" v={fmt(st.dich)}/>
         <Row l="× 67% = Reddito imponibile" v={fmt(st.baseForf)} s/>
         <div style={{background:"#a78bfa22",border:"1px solid #a78bfa66",borderRadius:6,padding:"8px 10px",margin:"8px 0"}}>
           <div style={{color:"#a78bfa",fontWeight:700,fontSize:13}}>Imposta sostitutiva 15%</div>
@@ -222,11 +341,12 @@ function Home({servizi,spese,anno,tutteSpese}){
         </div>
       </Card>
       <Card title="Regime Ordinario — IRPEF 2024" col="#f97316">
-        <Row l="Totale incassato" v={fmt(st.tot)}/>
+        <Row l="Dichiarato (bonifico+carta)" v={fmt(st.dich)}/>
         <Row l="IVA scorporata" v={fmt(st.iva)} s/>
         <Row l="Totale netto fiscale" v={fmt(st.dichNetto)}/>
         <Row l="Spese deducibili" v={fmt(st.totSp)} s/>
         {st.inpsPre>0&&<Row l="INPS anno prec. (dedotta)" v={fmt(st.inpsPre)} s/>}
+        {st.perditaPre>0&&<Row l="Perdita anno prec. (dedotta)" v={fmt(st.perditaPre)} s/>}
         <Row l="Reddito imponibile" v={fmt(st.baseOrd)}/>
         <div style={{background:"#f9731622",border:"1px solid #f9731644",borderRadius:6,padding:"8px 10px",margin:"8px 0"}}>
           <div style={{color:"#f97316",fontSize:11,fontWeight:700,marginBottom:4}}>Scaglioni IRPEF 2024</div>
@@ -253,8 +373,18 @@ function Home({servizi,spese,anno,tutteSpese}){
         </div>
         <div style={{fontSize:10,color:"#6b7280",marginTop:6}}>* Verificare con commercialista.</div>
       </Card>
-      <Card title="Spese totali" col="#f87171">
+      <Card title="Spese totali (deducibili)" col="#f87171">
         <Big val={st.totSp} col="#f87171"/>
+        <button onClick={()=>setShowSpeseDett(p=>!p)} style={{...S.bGr,fontSize:11,padding:"5px 10px"}}>{showSpeseDett?"Nascondi dettaglio":"Mostra dettaglio"}</button>
+        {showSpeseDett&&<div style={{marginTop:10,maxHeight:300,overflowY:"auto"}}>
+          {spese.filter(s=>s.tipo!=="inps_anno_prec"&&s.tipo!=="detrazioni_19"&&s.tipo!=="perdita_anno_prec").map(s=>(
+            <div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #1e2435",fontSize:11}}>
+              <span style={{color:"#c8d3e0"}}>{s.descrizione||s.tipo}<br/><span style={{color:"#6b7280"}}>{s.data} · {s.tipo}</span></span>
+              <span style={{color:"#f87171",fontWeight:700}}>{fmt(s.importo)}</span>
+            </div>
+          ))}
+          {spese.filter(s=>s.tipo!=="inps_anno_prec"&&s.tipo!=="detrazioni_19"&&s.tipo!=="perdita_anno_prec").length===0&&<div style={{color:"#6b7280",fontSize:11,padding:"6px 0"}}>Nessuna spesa in questo periodo</div>}
+        </div>}
       </Card>
     </div>
 
@@ -277,7 +407,7 @@ function Home({servizi,spese,anno,tutteSpese}){
           const mese=new Date().getMonth()+1;
           const cur=mese<=3?0:mese<=6?1:mese<=9?2:3;
           const past=i<cur,isCur=i===cur;
-          const bc=t.netta>0?(past?"#dc2626":isCur?"#f59e0b":"#34d399"):"#16a34a";
+          const bc=t.daVersare>0?(past?"#dc2626":isCur?"#f59e0b":"#34d399"):"#16a34a";
           return <div key={i} style={{background:"#1a1f2e",border:`1px solid ${bc}`,borderRadius:10,padding:12,position:"relative"}}>
             {isCur&&<div style={{position:"absolute",top:0,right:0,background:"#f59e0b",color:"#0f1320",fontSize:9,fontWeight:700,padding:"2px 6px",borderBottomLeftRadius:6}}>IN CORSO</div>}
             {past&&t.daVersare>0&&<div style={{position:"absolute",top:0,right:0,background:"#dc2626",color:"white",fontSize:9,fontWeight:700,padding:"2px 6px",borderBottomLeftRadius:6}}>SCADUTO</div>}
@@ -362,7 +492,7 @@ function Clienti({clienti,setClienti}){
       </div>
     </div>)}
     {clienti.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun committente</div>}
-    {delId&&<DelModal title="Eliminare questo committente?" onClose={()=>setDelId(null)} onConfirm={()=>{setClienti(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
+    {delId&&<DelModal title="Eliminare questo committente?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("committenti",delId);setClienti(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {modal&&<Modal title={form.nome?"Modifica":"Nuovo committente"} onClose={()=>setModal(null)}>
       <F label="Ragione Sociale / Nome"><input style={S.inp} value={form.nome||""} onChange={set("nome")}/></F>
       <div style={{display:"flex",gap:10}}>
@@ -402,7 +532,7 @@ function Driver({driver,setDriver}){
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <h2 style={{...S.gld,margin:0}}>Driver & Vetture</h2>
-      <button style={S.bG} onClick={()=>{setForm({id:uid()});setModal(1)}}><Ic n="pls" z={14}/>Nuovo</button>
+      <button style={S.bG} onClick={()=>{setForm({id:uid(),genere:"F"});setModal(1)}}><Ic n="pls" z={14}/>Nuovo</button>
     </div>
     {driver.map((d,i)=><div key={d.id} style={{...S.card,borderLeft:`4px solid ${DCOL[i%DCOL.length]}`}}>
       <div style={{display:"flex",justifyContent:"space-between"}}>
@@ -425,9 +555,16 @@ function Driver({driver,setDriver}){
       </div>
     </div>)}
     {driver.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun driver</div>}
-    {delId&&<DelModal title="Eliminare questo driver?" onClose={()=>setDelId(null)} onConfirm={()=>{setDriver(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
+    {delId&&<DelModal title="Eliminare questo driver?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("driver",delId);setDriver(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {modal&&<Modal title={form.nome?"Modifica driver":"Nuovo driver"} onClose={()=>setModal(null)}>
       <F label="Nome e Cognome"><input style={S.inp} value={form.nome||""} onChange={set("nome")}/></F>
+      <F label="Genere (per messaggio WhatsApp)">
+        <div style={{display:"flex",gap:8}}>
+          {[["F","Femminile"],["M","Maschile"]].map(([v,l])=>(
+            <button key={v} type="button" onClick={()=>setForm(p=>({...p,genere:v}))} style={{flex:1,padding:"7px",borderRadius:6,border:`1px solid ${form.genere===v?"#e8d5a3":"#2d3550"}`,background:form.genere===v?"#e8d5a322":"#0f1320",color:form.genere===v?"#e8d5a3":"#8892a4",cursor:"pointer",fontWeight:600,fontSize:13}}>{l}</button>
+          ))}
+        </div>
+      </F>
       <div style={{display:"flex",gap:10}}>
         <F label="Modello Vettura" w="60%"><input style={S.inp} value={form.modello||""} onChange={set("modello")}/></F>
         <F label="Targa" w="40%"><input style={S.inp} value={form.targa||""} onChange={set("targa")} placeholder="AA000BB"/></F>
@@ -454,15 +591,13 @@ function Driver({driver,setDriver}){
   </div>;
 }
 
-// ── CARTELLO (modal interno fullscreen) ──────────────────────────────────────
-// per compatibilità con Safari iOS che blocca window.open()
-
 // ── WHATSAPP ──────────────────────────────────────────────────────────────────
 const eur=String.fromCharCode(8364);
 function msgDriver(s,drv){
   const dataFmt=s.data?new Date(s.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"Non specificata";
   const tipo=s.tipo==="disposizione"?"Disposizione oraria "+(s.oreDisp||1)+"h":"Trasferimento";
   const compenso=s.prezzoDriver?(eur+parseFloat(s.prezzoDriver).toFixed(2)+(s.ivaSeparata?" + IVA":" IVA inclusa")):"Non indicato";
+  const haBagagli=s.bagagli!==""&&s.bagagli!==undefined&&s.bagagli!==null;
   return[
     "*BLACK DIAMOND TRANSFERT*",
     "_Servizio di Noleggio con Conducente_","",
@@ -471,33 +606,25 @@ function msgDriver(s,drv){
     "*Ora:* "+(s.ora||"Non specificata"),
     "*Tipo:* "+tipo,"",
     "*Passeggero:* "+(s.nomeUtente||"Non specificato"),
+    "*Passeggeri:* "+(s.passeggeri||1),
+    haBagagli?"*Bagagli:* "+s.bagagli:"",
     "*Volo/Treno:* "+(s.numeroVolo||"Non indicato"),"",
     "*Pick-up:* "+(s.pickup||"Non specificato"),
     "*Drop-off:* "+(s.dropoff||"Non specificato"),"",
     "*Compenso:* "+compenso,
     s.note?"\n*Note:* "+s.note:"",
     "","Buon servizio! Conferma ricezione con *OK*",
-  ].filter(l=>l!==null&&l!==undefined).join("\n");
+  ].filter(l=>l!==null&&l!==undefined&&l!=="").join("\n");
 }
-function msgUtente(s){
-  const dataFmt=s.data?new Date(s.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"Non specificata";
-  const tipo=s.tipo==="disposizione"?"Disposizione oraria "+(s.oreDisp||1)+"h":"Trasferimento";
-  return[
-    "*BLACK DIAMOND TRANSFERT*",
-    "_Servizio di Noleggio con Conducente_","",
-    "*Gentile "+(s.nomeUtente||"Cliente")+",*",
-    "Le confermiamo la prenotazione del Suo servizio:","",
-    "*Data:* "+dataFmt,
-    "*Ora:* "+(s.ora||"Non specificata"),
-    "*Tipo:* "+tipo,"",
-    "*Luogo di ritiro:* "+(s.pickup||"Non specificato"),
-    "*Destinazione:* "+(s.dropoff||"Non specificata"),
-    s.numeroVolo?"*Volo/Treno:* "+s.numeroVolo:"","",
-    "Il nostro autista La attender\u00e0 puntualmente.",
-    "Per qualsiasi informazione non esiti a contattarci.","",
-    "Black Diamond Transfert",
-    "Conferma ricezione con *OK*",
-  ].filter(Boolean).join("\n");
+function msgUtente(s,drv){
+  const nome=drv?.nome?.split(" ")[0]||"";
+  const genere=drv?.genere||"F";
+  const autista=genere==="M"?"il vostro autista":"la vostra autista";
+  const pronto=genere==="M"?"pronto ad accogliervi":"pronta ad accogliervi";
+  const pickup=s.pickup||"";
+  const dropoff=s.dropoff||"";
+  const tratta=pickup&&dropoff?` per il vostro servizio da ${pickup} a ${dropoff}`:"";
+  return nome?`Salve, sono ${nome} ${autista} e sono già sul posto, ${pronto}${tratta}!`:"Salve, siamo già sul posto, pronti ad accogliervi!";
 }
 const apriWA=(tel,msg)=>{
   const t=tel.replace(/[^0-9+]/g,"");
@@ -518,6 +645,7 @@ function apriGCal(s,drv,cli){
   const det=[
     "Committente: "+(cli?.nome||"—"),
     "Passeggero: "+(s.nomeUtente||"—"),
+    s.passeggeri>1?"N° Passeggeri: "+s.passeggeri+(s.bagagli>0?" · Bagagli: "+s.bagagli:""):"",
     "Driver: "+(drv?.nome||"—")+(drv?.targa?" ("+drv.targa+")":""),
     s.numeroVolo?"Volo/Treno: "+s.numeroVolo:"",
     "Tipo: "+(s.tipo==="disposizione"?"Disposizione "+(s.oreDisp||2)+"h":"Trasferimento"),
@@ -554,6 +682,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   const [inline,setInline]=useState(null);
   const [pagId,setPagId]=useState(null);
   const [delId,setDelId]=useState(null);
+  const [waPreview,setWaPreview]=useState(null);
   const MT=["contanti","bonifico","carta","mypos","paypal"];
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
   const upd=(id,patch)=>setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));
@@ -562,7 +691,6 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     setServizi(p=>{const ex=p.find(s=>s.id===form.id);return ex?p.map(s=>s.id===form.id?form:s):[...p,form]});
     setModal(null);
   };
-  // Servizi pagati nascosti di default; visibili solo se c'è una ricerca attiva
   const filtered=servizi.filter(s=>{
     if(s.dataPagamento&&!filter)return false;
     if(!filter)return true;
@@ -577,7 +705,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <h2 style={{...S.gld,margin:0}}>Servizi {anno!=="tutti"&&<span style={{fontSize:14,color:"#60a5fa"}}>— {anno}</span>}</h2>
-      <button style={S.bG} onClick={()=>{setForm({id:uid(),data:today(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false});setModal("edit")}}><Ic n="pls" z={14}/>Nuovo</button>
+      <button style={S.bG} onClick={()=>{setForm({id:uid(),data:today(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false,passeggeri:1});setModal("edit")}}><Ic n="pls" z={14}/>Nuovo</button>
     </div>
     <div style={{position:"relative",marginBottom:12}}>
       <input style={{...S.inp,paddingLeft:32}} placeholder="Cerca ID, utente, committente, volo..." value={filter} onChange={e=>setFilter(e.target.value)}/>
@@ -608,6 +736,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
               <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome||"—"} · <span style={{color:col}}>{drv?.nome||"—"} {drv?.targa&&"("+drv.targa+")"}</span></div>
               <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
+              {(s.passeggeri>1||s.bagagli)&&<div style={{color:"#8892a4",fontSize:11}}>👥 {s.passeggeri||1} pax {s.bagagli?"· 🧳 "+s.bagagli+" bag":""}</div>}
               {s.telefonoUtente&&<div style={{color:"#8892a4",fontSize:11}}>Pass. WA: {s.telefonoUtente}</div>}
               {s.dataPagamento&&<div style={{color:"#4b5563",fontSize:11}}>Pagato {s.dataPagamento} · {s.metodoPagamento}</div>}
             </div>
@@ -627,9 +756,8 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"3px 7px"}}><Ic n="edt" z={12}/></button>
                 <button onClick={()=>setDelId(s.id)} style={{...S.bR,padding:"3px 7px"}}><Ic n="trs" z={12}/></button>
                 <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"3px 7px",color:"#25d366",cursor:"pointer",fontSize:11,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
-                {s.telefonoUtente&&<button onClick={()=>apriWA(s.telefonoUtente,msgUtente(s))} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"3px 7px",color:"#86efac",cursor:"pointer",fontSize:11,fontWeight:700}}>WA Pass.</button>}
+                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"3px 7px",color:"#86efac",cursor:"pointer",fontSize:11,fontWeight:700}}>WA Pass.</button>}
                 <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"3px 7px",color:"#4285f4",cursor:"pointer",fontSize:11,fontWeight:700}}>GCal</button>
-
               </div>
             </div>
           </div>
@@ -642,6 +770,14 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 <input style={{...S.inp,padding:"5px 8px"}} type={t} defaultValue={s[f]||""} onBlur={e=>upd(s.id,{[f]:e.target.value})}/>
               </div>
             ))}
+            <div style={{flex:"1 1 90px"}}>
+              <div style={S.lbl}>N° Passeggeri</div>
+              <input style={{...S.inp,padding:"5px 8px"}} type="number" min="1" defaultValue={s.passeggeri||1} onBlur={e=>upd(s.id,{passeggeri:parseInt(e.target.value)||1})}/>
+            </div>
+            <div style={{flex:"1 1 90px"}}>
+              <div style={S.lbl}>N° Bagagli</div>
+              <input style={{...S.inp,padding:"5px 8px"}} type="number" min="0" defaultValue={s.bagagli===undefined||s.bagagli===null?"":s.bagagli} onBlur={e=>{const v=e.target.value;upd(s.id,{bagagli:v===""?"":parseInt(v)})}}/>
+            </div>
             <div style={{flex:"1 1 120px"}}>
               <div style={S.lbl}>Driver</div>
               <select style={{...S.inp,padding:"5px 8px"}} defaultValue={s.driverId||""} onBlur={e=>upd(s.id,{driverId:e.target.value})}>
@@ -668,8 +804,16 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     })}
     {filtered.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun servizio</div>}
 
-    {delId&&<DelModal title="Eliminare questo servizio?" onClose={()=>setDelId(null)} onConfirm={()=>{setServizi(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
+    {delId&&<DelModal title="Eliminare questo servizio?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("servizi",delId);setServizi(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={m=>{upd(pagId,{dataPagamento:today(),metodoPagamento:m});setPagId(null);}}/>}
+
+    {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
+      <div style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:8,padding:14,whiteSpace:"pre-wrap",fontSize:14,color:"#c8d3e0",marginBottom:14}}>{waPreview.msg}</div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+        <button style={S.bGr} onClick={()=>setWaPreview(null)}>Chiudi</button>
+        <button style={S.bG} onClick={()=>{apriWA(waPreview.tel,waPreview.msg);setWaPreview(null);}}>Apri WhatsApp</button>
+      </div>
+    </Modal>}
 
     {modal==="edit"&&<Modal title={servizi.find(s=>s.id===form.id)?`Modifica ${form.id}`:`Nuovo — ${form.id}`} onClose={()=>setModal(null)}>
       <div style={{display:"flex",gap:10}}>
@@ -689,6 +833,10 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
         <F label="N. Volo / Treno" w="50%"><input style={S.inp} value={form.numeroVolo||""} onChange={set("numeroVolo")} placeholder="AZ1234"/></F>
       </div>
       <F label="Tel. WhatsApp Passeggero (+39...)"><input style={S.inp} value={form.telefonoUtente||""} onChange={set("telefonoUtente")} placeholder="+393331234567"/></F>
+      <div style={{display:"flex",gap:10}}>
+        <F label="N° Passeggeri" w="50%"><input style={S.inp} type="number" min="1" value={form.passeggeri||1} onChange={e=>setForm(p=>({...p,passeggeri:parseInt(e.target.value)||1}))}/></F>
+        <F label="N° Bagagli" w="50%"><input style={S.inp} type="number" min="0" value={form.bagagli===undefined||form.bagagli===null?"":form.bagagli} onChange={e=>{const v=e.target.value;setForm(p=>({...p,bagagli:v===""?"":parseInt(v)}))}}/></F>
+      </div>
       <F label="Pick-up"><input style={S.inp} value={form.pickup||""} onChange={set("pickup")}/></F>
       <F label="Drop-off"><input style={S.inp} value={form.dropoff||""} onChange={set("dropoff")}/></F>
       <div style={{display:"flex",gap:10,alignItems:"flex-end"}}>
@@ -978,6 +1126,7 @@ function Spese({spese,setSpese,driver,anno}){
     {k:"commissioni_carte",l:"Commissioni Carte"},
     {k:"detrazioni_19",l:"Detrazioni 19%"},
     {k:"inps_anno_prec",l:"INPS anno precedente"},
+    {k:"perdita_anno_prec",l:"Perdita anno precedente"},
     {k:"lavaggi",l:"Lavaggi"},
     {k:"manutenzione",l:"Manutenzione"},
     {k:"pagamento_driver",l:"Pagamento Driver"},
@@ -991,7 +1140,7 @@ function Spese({spese,setSpese,driver,anno}){
     if(!form.importo)return alert("Inserire importo");
     const imp=parseFloat(form.importo)||0;
     const A2=ALIQ_MAP;
-    const formFinal=(form.tipo==="inps_anno_prec"||form.tipo==="detrazioni_19")?{...form,aliqIva:"0"}:form;
+    const formFinal=(form.tipo==="inps_anno_prec"||form.tipo==="detrazioni_19"||form.tipo==="perdita_anno_prec")?{...form,aliqIva:"0"}:form;
     let voci=[{...formFinal,id:formFinal.id||uid()}];
     if(form.tipo==="acquisto_auto"&&!form.isQuota&&!form.quotaManuale){
       const aliq=A2[form.aliqIva]||0;
@@ -1005,7 +1154,7 @@ function Spese({spese,setSpese,driver,anno}){
       const ql=[{q:qMezza,l:"1° anno ("+((pct/2)*100).toFixed(1)+"%)"}];
       for(let i=0;i<anniI;i++)ql.push({q:qPiena,l:"anno "+(i+2)+" ("+(pct*100).toFixed(0)+"%)"});
       if(res>0.01)ql.push({q:res,l:"anno "+(anniI+2)+" - coda"});
-      voci=ql.map((x,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:ql.length,importo:x.q.toFixed(2),aliqIva:i===0?form.aliqIva:"0",data:(annoB+i)+"-12-31",descrizione:"Ammort. auto "+(form.descrizione||"")+" "+x.l+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
+      voci=ql.map((x,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:ql.length,importo:x.q.toFixed(2),aliqIva:i===0?form.aliqIva:"0",ivaCreditoFull:i===0?ivaI:0,data:(annoB+i)+"-12-31",descrizione:"Ammort. auto "+(form.descrizione||"")+" "+x.l+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
     }
     if(form.tipo==="beni_durevoli"&&imp>500&&!form.isQuota&&!form.quotaManuale){
       const aliq=A2[form.aliqIva]||0;
@@ -1015,7 +1164,7 @@ function Spese({spese,setSpese,driver,anno}){
       const anni=Math.max(parseInt(form.anniAmmort)||anniMin,anniMin);
       const quota=netto/anni;
       const annoB=parseInt((form.data||today()).slice(0,4));
-      voci=Array.from({length:anni},(_,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:anni,importo:quota.toFixed(2),aliqIva:i===0?form.aliqIva:"0",data:(annoB+i)+"-12-31",descrizione:"Ammort. bene "+(form.descrizione||"")+" quota "+(i+1)+"/"+anni+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
+      voci=Array.from({length:anni},(_,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:anni,importo:quota.toFixed(2),aliqIva:i===0?form.aliqIva:"0",ivaCreditoFull:i===0?ivaI:0,data:(annoB+i)+"-12-31",descrizione:"Ammort. bene "+(form.descrizione||"")+" quota "+(i+1)+"/"+anni+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
     }
     setSpese(p=>[...p.filter(x=>x.id!==form.id),...voci]);
     setModal(null);
@@ -1066,10 +1215,11 @@ function Spese({spese,setSpese,driver,anno}){
       </div>;
     })}
     {spese.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessuna spesa</div>}
-    {delId&&<DelModal title="Eliminare questa spesa?" onClose={()=>setDelId(null)} onConfirm={()=>{setSpese(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
+    {delId&&<DelModal title="Eliminare questa spesa?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("spese",delId);setSpese(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {modal&&<Modal title="Spesa" onClose={()=>setModal(null)}>
       <F label="Categoria"><select style={S.inp} value={form.tipo||""} onChange={set("tipo")}><option value="">— Seleziona —</option>{CATS.map(c=><option key={c.k} value={c.k}>{c.l}</option>)}</select></F>
       {form.tipo==="inps_anno_prec"&&<div style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#60a5fa",fontSize:12,fontWeight:700,marginBottom:3}}>INPS anno precedente</div><div style={{color:"#c8d3e0",fontSize:11}}>Dedotta dal reddito imponibile IRPEF come costo. Aliquota IVA: 0%.</div></div>}
+      {form.tipo==="perdita_anno_prec"&&<div style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#60a5fa",fontSize:12,fontWeight:700,marginBottom:3}}>Perdita anno precedente</div><div style={{color:"#c8d3e0",fontSize:11}}>Dedotta dal reddito imponibile IRPEF, inserimento manuale.</div></div>}
       {form.tipo==="detrazioni_19"&&<div style={{background:"#1a2a3a",border:"1px solid #a78bfa",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#a78bfa",fontSize:12,fontWeight:700,marginBottom:3}}>Detrazioni 19%</div><div style={{color:"#c8d3e0",fontSize:11}}>Il 19% dell&apos;importo verrà sottratto dall&apos;IRPEF lorda in Dashboard.</div></div>}
       {form.tipo==="acquisto_auto"&&<>
         <div style={{marginBottom:8}}><label style={{color:"#8892a4",fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={!!form.quotaManuale} onChange={e=>setForm(p=>({...p,quotaManuale:e.target.checked}))}/>Quota manuale</label></div>
@@ -1095,7 +1245,7 @@ function Spese({spese,setSpese,driver,anno}){
         <F label="Data" w="50%"><input style={S.inp} type="date" value={form.data||""} onChange={set("data")}/></F>
         <F label="Importo EUR" w="50%"><input style={S.inp} type="number" step="0.01" value={form.importo||""} onChange={e=>setForm(p=>({...p,importo:e.target.value}))}/></F>
       </div>
-      {form.tipo!=="inps_anno_prec"&&form.tipo!=="detrazioni_19"&&<>
+      {form.tipo!=="inps_anno_prec"&&form.tipo!=="detrazioni_19"&&form.tipo!=="perdita_anno_prec"&&<>
         <F label="Aliquota IVA (credito)"><select style={S.inp} value={form.aliqIva||"22"} onChange={set("aliqIva")}>{ALIQ.map(a=><option key={a.k} value={a.k}>{a.l}</option>)}</select></F>
         {form.aliqIva&&form.aliqIva!=="0"&&imp>0&&<div style={{fontSize:11,color:"#4ade80",marginBottom:8}}>IVA a credito: {fmt(imp*(ALIQ_MAP[form.aliqIva]||0)/(1+(ALIQ_MAP[form.aliqIva]||0)))}</div>}
       </>}
@@ -1103,6 +1253,409 @@ function Spese({spese,setSpese,driver,anno}){
       <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:8}}>
         <button style={S.bGr} onClick={()=>setModal(null)}>Annulla</button>
         <button style={S.bG} onClick={salva}>Salva</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+// ── PREVENTIVI ────────────────────────────────────────────────────────────────
+const AZIENDA={
+  nome:"BLACK DIAMOND TRANSFERT DI MURRAY ESTHER",
+  indirizzo:"Viale Don Giovanni Minzoni 38",
+  citta:"20091 Bresso (MI)",
+  piva:"14145490968",
+  cf:"GRCRHS80L66Z505C",
+  email:"blackdiamondtransfert@gmail.com",
+  cell:"0039 3806543014",
+  web:"www.blackdiamondtransfert.it",
+  iban:"IT41S36772223000EM002528613",
+  intestatarioIBAN:"BLACK DIAMOND TRANSFERT DI MURRAY ESTHER",
+  firmatario:"Esther Murray",
+};
+
+const calcolaPrev=(f,tariff)=>{
+  const righe=f.righe||[];
+  const sub=righe.reduce((a,r)=>{
+    const imp=(parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1);
+    const sc=(parseFloat(r.sconto)||0)/100;
+    return a+imp*(1-sc);
+  },0);
+  const sg=(parseFloat(f.scontoGlobale)||0)/100;
+  const dopoSc=sub*(1-sg);
+  const aliq=(parseFloat(f.aliqIva)||tariff.iva)/100;
+  const iva=dopoSc*aliq;
+  return{sub,sgAbs:sub*sg,dopoSc,iva,tot:dopoSc+iva};
+};
+
+async function loadPrevTariff(){
+  try{
+    const[rp,rt]=await Promise.all([
+      supa.from("preventivi").select("*").order("data",{ascending:false}),
+      supa.from("tariffario").select("*").eq("id","default").single(),
+    ]);
+    const preventivi=(rp.data||[]).map(r=>({
+      id:r.id,data:r.data||"",validita:r.validita||30,
+      clienteNome:r.nome_cliente||"",clienteEmail:r.cliente_email||"",
+      telefonoCli:r.telefono_cli||"",clienteRef:r.cliente_ref||"",
+      veicolo:r.veicolo||"",giornoServizio:r.giorno_servizio||"",
+      titoloServizio:r.titolo_servizio||"",aliqIva:r.aliq_iva||"",
+      scontoGlobale:r.sconto_globale||"0",righe:r.righe_json||[],
+      metodiPagamento:r.metodi_pagamento||"",note:r.note||"",
+      committenteId:r.committente_id||"",stato:r.stato||"bozza",
+    }));
+    const tariff=rt.data?{
+      prezzoTrasf:rt.data.prezzo_trasf||425,
+      prezzoOra:rt.data.prezzo_ora||50,
+      pedaggioStd:rt.data.pedaggio_std||13,
+      iva:rt.data.iva||10,
+    }:{prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10};
+    return{preventivi,tariff};
+  }catch(e){
+    console.error("loadPrevTariff error",e);
+    return{preventivi:[],tariff:{prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10}};
+  }
+}
+
+async function savePrevList(list){
+  if(!list.length)return;
+  await supa.from("preventivi").upsert(list.map(p=>({
+    id:p.id,data:p.data||null,validita:p.validita||30,
+    nome_cliente:p.clienteNome||null,cliente_email:p.clienteEmail||null,
+    telefono_cli:p.telefonoCli||null,cliente_ref:p.clienteRef||null,
+    veicolo:p.veicolo||null,giorno_servizio:p.giornoServizio||null,
+    titolo_servizio:p.titoloServizio||null,aliq_iva:p.aliqIva||null,
+    sconto_globale:p.scontoGlobale||"0",righe_json:p.righe||[],
+    metodi_pagamento:p.metodiPagamento||null,note:p.note||null,
+    committente_id:p.committenteId||null,stato:p.stato||"bozza",
+  })));
+}
+
+async function saveTariffario(t){
+  await supa.from("tariffario").upsert({
+    id:"default",prezzo_trasf:t.prezzoTrasf,prezzo_ora:t.prezzoOra,
+    pedaggio_std:t.pedaggioStd,iva:t.iva,
+  });
+}
+
+function Preventivi(){
+  const [preventivi,setPrevR]=useState([]);
+  const [tariff,setTariff]=useState({prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10});
+  const [modal,setModal]=useState(null);
+  const [form,setForm]=useState({});
+  const [delId,setDelId]=useState(null);
+  const [showTariff,setShowTariff]=useState(false);
+  const [loaded,setLoaded]=useState(false);
+  const [msg,setMsg]=useState("");
+  const [anteprimaPrev,setAnteprimaPrev]=useState(null);
+
+  useEffect(()=>{(async()=>{
+    const{preventivi:p,tariff:t}=await loadPrevTariff();
+    setPrevR(p);setTariff(t);setLoaded(true);
+  })();},[]);
+
+  const savePrev=async list=>{
+    setPrevR(list);
+    await savePrevList(list);
+  };
+  const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+
+  const nuovoPreventivo=()=>{
+    setForm({
+      id:uid(),data:today(),validita:"30",
+      clienteNome:"",clienteEmail:"",telefonoCli:"",clienteRef:"",
+      veicolo:"Mercedes-Benz Classe E",giornoServizio:"",titoloServizio:"",
+      aliqIva:String(tariff.iva),scontoGlobale:"0",
+      righe:[],
+      metodiPagamento:"Bonifico bancario intestato a "+AZIENDA.intestatarioIBAN+"\nIBAN: "+AZIENDA.iban,
+      note:"Le spese di vitto e alloggio (hotel, pranzo e/o cena) qualora necessarie, sono a carico del cliente e non sono incluse nel presente preventivo. "+String.fromCharCode(200)+" richiesta la conferma del preventivo in oggetto.\nCordiali saluti",
+    });
+    setModal("edit");
+  };
+
+  const addRiga=tipo=>{
+    const r={id:uid(),tipo,descrizione:"",qta:1,prezzoUnit:0,sconto:"0",nascosta:false};
+    if(tipo==="trasferimento"){r.descrizione="Trasferimento";r.prezzoUnit=tariff.prezzoTrasf;}
+    if(tipo==="disposizione"){r.descrizione="Disposizione oraria";r.prezzoUnit=tariff.prezzoOra;}
+    if(tipo==="pedaggio"){r.descrizione="Pedaggio Autostradale";r.prezzoUnit=tariff.pedaggioStd;}
+    setForm(p=>({...p,righe:[...(p.righe||[]),r]}));
+  };
+
+  const updRiga=(rid,patch)=>setForm(p=>({...p,righe:p.righe.map(r=>r.id!==rid?r:{...r,...patch})}));
+  const delRiga=rid=>setForm(p=>({...p,righe:p.righe.filter(r=>r.id!==rid)}));
+
+  const salva=async()=>{
+    if(!form.clienteNome)return alert("Inserire nome cliente");
+    const lista=preventivi.find(p=>p.id===form.id)?preventivi.map(p=>p.id===form.id?form:p):[...preventivi,form];
+    await savePrev(lista);setModal(null);
+  };
+
+  const eliminaPrev=async id=>{
+    await supa.from("preventivi").delete().eq("id",id);
+    setPrevR(p=>p.filter(x=>x.id!==id));
+  };
+
+  const stampaPDF=prev=>{
+    setAnteprimaPrev(prev);
+  };
+
+  const inviaWA=prev=>{
+    const tel=(prev.telefonoCli||"").replace(/[^0-9+]/g,"");
+    if(!tel){alert("Inserire WhatsApp cliente nel preventivo");return;}
+    const c=calcolaPrev(prev,tariff);
+    const righeVis=(prev.righe||[]).filter(r=>!r.nascosta);
+    const lines=[
+      "*BLACK DIAMOND TRANSFERT*",
+      "_Preventivo "+prev.id+"_","",
+      "Gentile "+prev.clienteNome+",",
+      "Le inviamo il preventivo per il servizio richiesto:","",
+      ...righeVis.map(r=>"- "+r.descrizione+": "+eur+fmt((parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1))),
+      "",
+      "Totale IVA inclusa: *"+eur+fmt(c.tot)+"*","",
+      "Per accettare risponda OK a questo messaggio.","",
+      "Black Diamond Transfert",
+    ].join("\n");
+    window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(lines),"_blank");
+  };
+
+  const calc=form.righe?calcolaPrev(form,tariff):{sub:0,sgAbs:0,dopoSc:0,iva:0,tot:0};
+
+  if(!loaded)return <div style={{color:"#8892a4",textAlign:"center",padding:40}}>Caricamento preventivi...</div>;
+
+  if(anteprimaPrev){
+    const prev=anteprimaPrev;
+    const cc=calcolaPrev(prev,tariff);
+    const righeVis=(prev.righe||[]).filter(r=>!r.nascosta);
+    const dataBella=prev.data?new Date(prev.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"";
+    return <div style={{background:"#fff",minHeight:"100vh",fontFamily:"Arial,sans-serif",fontSize:13,color:"#111",padding:28,margin:"-18px"}}>
+      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:20,borderBottom:"1px solid #ddd",paddingBottom:12}} className="no-print">
+        <button onClick={()=>setAnteprimaPrev(null)} style={{background:"#f0f0f0",border:"1px solid #ccc",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13}}>← Torna</button>
+        <button onClick={()=>window.print()} style={{background:"#111",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>🖨 Stampa / Salva PDF</button>
+      </div>
+      <style>{`@media print{.no-print{display:none!important}}`}</style>
+      <div style={{textAlign:"center",borderBottom:"2px solid #111",paddingBottom:14,marginBottom:18}}>
+        <div style={{fontSize:15,fontWeight:"bold",letterSpacing:.5,marginBottom:6}}>{AZIENDA.nome}</div>
+        <div style={{fontSize:12,lineHeight:1.7}}>
+          <div>{AZIENDA.indirizzo} - {AZIENDA.citta}</div>
+          <div>p.iva: {AZIENDA.piva} - c.f.: {AZIENDA.cf}</div>
+          <div>Mail: {AZIENDA.email} &nbsp; Cell: {AZIENDA.cell}</div>
+          <div>{AZIENDA.web}</div>
+        </div>
+      </div>
+      <div style={{marginBottom:14,fontSize:12,lineHeight:1.8}}>
+        <div>{dataBella}</div>
+        {prev.clienteNome&&<div><strong>Spett.le: {prev.clienteNome}</strong>{prev.clienteRef&&" - Rif. "+prev.clienteRef}</div>}
+        {prev.clienteEmail&&<div>{prev.clienteEmail}</div>}
+        {prev.validita&&<div>Preventivo valido {prev.validita} giorni dalla data di emissione.</div>}
+      </div>
+      <div style={{fontSize:14,fontWeight:"bold",margin:"14px 0 6px",textTransform:"uppercase"}}>
+        PREVENTIVO SERVIZIO CON {prev.veicolo||"VEICOLO NCC"}
+      </div>
+      {prev.giornoServizio&&<div style={{fontWeight:"bold",marginBottom:8}}>
+        GIORNO {new Date(prev.giornoServizio).toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric"})} — {prev.titoloServizio||""}
+      </div>}
+      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
+        <thead>
+          <tr style={{background:"#eee"}}>
+            <th style={{padding:"6px 8px",border:"1px solid #bbb",fontSize:12,textAlign:"left"}}>Servizio</th>
+            <th style={{padding:"6px 8px",border:"1px solid #bbb",fontSize:12,textAlign:"left"}}>Descrizione</th>
+            <th style={{padding:"6px 8px",border:"1px solid #bbb",fontSize:12,textAlign:"right"}}>Q.tà</th>
+            <th style={{padding:"6px 8px",border:"1px solid #bbb",fontSize:12,textAlign:"right"}}>Importo (€)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {righeVis.map(r=>{
+            const imp=(parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1);
+            const sc=parseFloat(r.sconto)||0;
+            const netto=imp*(1-sc/100);
+            return <React.Fragment key={r.id}>
+              <tr>
+                <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,verticalAlign:"top"}}>{r.tipo==="trasferimento"?"Trasferimento":r.tipo==="disposizione"?"Disposizione oraria":r.tipo==="pedaggio"?"Pedaggio":""}</td>
+                <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,verticalAlign:"top"}}>{r.descrizione}</td>
+                <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,textAlign:"right"}}>{r.qta}</td>
+                <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,textAlign:"right"}}>{fmt(netto)}</td>
+              </tr>
+              {sc>0&&<tr>
+                <td colSpan="3" style={{padding:"4px 8px",border:"1px solid #ccc",fontSize:11,color:"#666"}}>Sconto {sc}%</td>
+                <td style={{padding:"4px 8px",border:"1px solid #ccc",fontSize:11,textAlign:"right",color:"#c00"}}>- {fmt(imp*sc/100)}</td>
+              </tr>}
+            </React.Fragment>;
+          })}
+        </tbody>
+      </table>
+      <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
+        <tbody>
+          <tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Totale servizi</td><td/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right"}}>{fmt(cc.sub)}</td>
+          </tr>
+          {(parseFloat(prev.scontoGlobale)||0)>0&&<tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Sconto {prev.scontoGlobale}%</td><td/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right",color:"#c00"}}>- {fmt(cc.sgAbs)}</td>
+          </tr>}
+          <tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Subtotale</td><td/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right"}}>{fmt(cc.dopoSc)}</td>
+          </tr>
+          <tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>IVA</td>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb",fontSize:11}}>{prev.aliqIva||tariff.iva}% Aliquota servizio NCC</td>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right"}}>{fmt(cc.iva)}</td>
+          </tr>
+          <tr style={{fontWeight:"bold",fontSize:14,background:"#111",color:"#fff"}}>
+            <td colSpan="2" style={{padding:"8px",border:"1px solid #333"}}>TOTALE</td>
+            <td style={{padding:"8px",border:"1px solid #333",textAlign:"right"}}>{eur} {fmt(cc.tot)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style={{marginTop:18,fontSize:12,borderTop:"1px solid #bbb",paddingTop:10,lineHeight:1.7}}>
+        <div><strong>MODALITÀ DI PAGAMENTO ACCETTATE:</strong></div>
+        <div style={{marginTop:6,whiteSpace:"pre-line"}}>{prev.metodiPagamento||""}</div>
+        {prev.note&&<div style={{marginTop:12,fontStyle:"italic",whiteSpace:"pre-line"}}>{prev.note}</div>}
+      </div>
+      <div style={{marginTop:30,textAlign:"right",fontWeight:"bold",lineHeight:1.9}}>
+        <div>{AZIENDA.nome}</div>
+        <div>{AZIENDA.firmatario}</div>
+        <div style={{marginTop:20,height:50,borderBottom:"1px solid #111",width:200,marginLeft:"auto"}}/>
+      </div>
+    </div>;
+  }
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+      <h2 style={{...S.gld,margin:0}}>Preventivi</h2>
+      <div style={{display:"flex",gap:8}}>
+        <button style={{...S.bGr,fontSize:12,borderColor:showTariff?"#d97706":"#2d3550",color:showTariff?"#d97706":"#8892a4"}} onClick={()=>setShowTariff(t=>!t)}>Tariffario</button>
+        <button style={S.bG} onClick={nuovoPreventivo}><Ic n="pls" z={14}/>Nuovo preventivo</button>
+      </div>
+    </div>
+    {msg&&<div style={{background:"#3d1515",color:"#f87171",borderRadius:6,padding:"8px 12px",marginBottom:12,fontSize:12}}>{msg}</div>}
+
+    {showTariff&&<div style={{background:"#1a1f2e",border:"1px solid #d97706",borderRadius:8,padding:14,marginBottom:14}}>
+      <div style={{color:"#d97706",fontWeight:700,fontSize:12,marginBottom:10,textTransform:"uppercase"}}>Tariffario base — non visibile al cliente</div>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+        {[["Trasferimento (€)","prezzoTrasf"],["Ora disposizione (€)","prezzoOra"],["Pedaggio std (€)","pedaggioStd"],["IVA default (%)","iva"]].map(([l,k])=>(
+          <div key={k} style={{flex:"1 1 150px"}}>
+            <div style={S.lbl}>{l}</div>
+            <input style={S.inp} type="number" step="0.01" value={tariff[k]} onChange={e=>setTariff(t=>({...t,[k]:parseFloat(e.target.value)||0}))}/>
+          </div>
+        ))}
+      </div>
+      <button style={{...S.bG,marginTop:10}} onClick={async()=>{await saveTariffario(tariff);setMsg("Tariffario salvato!");setTimeout(()=>setMsg(""),2000);}}>Salva tariffario</button>
+    </div>}
+
+    {preventivi.length===0&&<div style={{...S.card,textAlign:"center",color:"#4b5563",padding:40}}>Nessun preventivo. Creane uno!</div>}
+    {[...preventivi].reverse().map(p=>{
+      const c=calcolaPrev(p,tariff);
+      return <div key={p.id} style={{...S.card,borderLeft:"4px solid #e8d5a3"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+          <div>
+            <div style={{color:"#e8d5a3",fontWeight:700,fontSize:13}}>{p.id}</div>
+            <div style={{color:"#c8d3e0",fontWeight:600,fontSize:14}}>{p.clienteNome||"—"}</div>
+            <div style={{color:"#8892a4",fontSize:12}}>{p.data} · {p.veicolo||"—"}</div>
+            {p.giornoServizio&&<div style={{color:"#8892a4",fontSize:12}}>Giorno servizio: {p.giornoServizio}</div>}
+            <div style={{color:"#8892a4",fontSize:12}}>{p.righe?.filter(r=>!r.nascosta).length||0} voci</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+            <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700}}>{eur} {fmt(c.tot)}</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+              <button onClick={()=>{setForm({...p});setModal("edit");}} style={{...S.bGr,padding:"5px 12px",fontSize:12}}>Modifica</button>
+              <button onClick={()=>stampaPDF(p)} style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:6,color:"#60a5fa",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>PDF / Stampa</button>
+              <button onClick={()=>inviaWA(p)} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:6,color:"#25d366",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>WhatsApp</button>
+              <button onClick={()=>setDelId(p.id)} style={{...S.bR,padding:"5px 8px"}}>🗑</button>
+            </div>
+          </div>
+        </div>
+      </div>;
+    })}
+
+    {delId&&<DelModal title="Eliminare questo preventivo?" onClose={()=>setDelId(null)} onConfirm={async()=>{await eliminaPrev(delId);setDelId(null);}}/>}
+
+    {modal==="edit"&&<Modal title={"Preventivo "+form.id} onClose={()=>setModal(null)}>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+        <F label="Data preventivo" w="50%"><input style={S.inp} type="date" value={form.data||""} onChange={set("data")}/></F>
+        <F label="Validità (giorni)" w="50%"><input style={S.inp} type="number" value={form.validita||30} onChange={set("validita")}/></F>
+      </div>
+      <F label="Nome Cliente / Spett.le"><input style={S.inp} value={form.clienteNome||""} onChange={set("clienteNome")} placeholder="Es. Rossi Mario o Azienda Srl"/></F>
+      <div style={{display:"flex",gap:10}}>
+        <F label="Email cliente" w="55%"><input style={S.inp} type="email" value={form.clienteEmail||""} onChange={set("clienteEmail")}/></F>
+        <F label="WhatsApp cliente" w="45%"><input style={S.inp} value={form.telefonoCli||""} onChange={set("telefonoCli")} placeholder="+39..."/></F>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <F label="Rif. / Attenzione" w="50%"><input style={S.inp} value={form.clienteRef||""} onChange={set("clienteRef")}/></F>
+        <F label="Veicolo" w="50%"><input style={S.inp} value={form.veicolo||""} onChange={set("veicolo")} placeholder="Mercedes-Benz Classe E"/></F>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <F label="Giorno del servizio" w="50%"><input style={S.inp} type="date" value={form.giornoServizio||""} onChange={set("giornoServizio")}/></F>
+        <F label="Titolo servizio" w="50%"><input style={S.inp} value={form.titoloServizio||""} onChange={set("titoloServizio")} placeholder="Es. TRASFERIMENTO E DISPOSIZIONE"/></F>
+      </div>
+
+      <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:1,margin:"12px 0 8px",borderTop:"1px solid #2d3550",paddingTop:12}}>Voci del preventivo</div>
+      {(form.righe||[]).map((r)=>(
+        <div key={r.id} style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:6,padding:10,marginBottom:8}}>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div style={{flex:"2 1 180px"}}>
+              <div style={S.lbl}>Descrizione</div>
+              <input style={S.inp} value={r.descrizione} onChange={e=>updRiga(r.id,{descrizione:e.target.value})} placeholder="Descrizione servizio"/>
+            </div>
+            <div style={{flex:"1 1 60px"}}>
+              <div style={S.lbl}>Q.tà</div>
+              <input style={S.inp} type="number" step="0.5" min="0" defaultValue={r.qta} key={"qta-"+r.id} onBlur={e=>updRiga(r.id,{qta:parseFloat(e.target.value)||1})}/>
+            </div>
+            <div style={{flex:"1 1 80px"}}>
+              <div style={S.lbl}>Prezzo unit.</div>
+              <input style={S.inp} type="number" step="0.01" defaultValue={r.prezzoUnit} key={"pu-"+r.id} onBlur={e=>updRiga(r.id,{prezzoUnit:parseFloat(e.target.value)||0})}/>
+            </div>
+            <div style={{flex:"1 1 60px"}}>
+              <div style={S.lbl}>Sconto %</div>
+              <input style={S.inp} type="number" min="0" max="100" defaultValue={r.sconto||"0"} key={"sc-"+r.id} onBlur={e=>updRiga(r.id,{sconto:e.target.value})}/>
+            </div>
+            <div style={{flex:"1 1 70px",textAlign:"right"}}>
+              <div style={S.lbl}>Importo</div>
+              <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,padding:"7px 0",fontSize:14}}>
+                {eur} {fmt((parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1)*(1-(parseFloat(r.sconto)||0)/100))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:6,alignItems:"center",paddingBottom:2}}>
+              <label style={{display:"flex",alignItems:"center",gap:4,color:"#8892a4",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
+                <input type="checkbox" checked={!!r.nascosta} onChange={e=>updRiga(r.id,{nascosta:e.target.checked})}/>
+                nascosta
+              </label>
+              <button onClick={()=>delRiga(r.id)} style={{...S.bR,padding:"4px 6px",fontSize:12}}>✕</button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+        {[["trasferimento","+ Trasferimento"],["disposizione","+ Disposizione"],["pedaggio","+ Pedaggio"],["custom","+ Personalizzata"]].map(([tipo,label])=>(
+          <button key={tipo} onClick={()=>addRiga(tipo)} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"6px 12px",cursor:"pointer",fontSize:12}}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:8,padding:12,marginBottom:12}}>
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 120px"}}>
+            <div style={S.lbl}>Sconto globale %</div>
+            <input style={S.inp} type="number" min="0" max="100" value={form.scontoGlobale||"0"} onChange={set("scontoGlobale")}/>
+          </div>
+          <div style={{flex:"1 1 100px"}}>
+            <div style={S.lbl}>IVA %</div>
+            <input style={S.inp} type="number" value={form.aliqIva||String(tariff.iva)} onChange={set("aliqIva")}/>
+          </div>
+        </div>
+        <div style={{borderTop:"1px solid #2d3550",paddingTop:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",color:"#8892a4",fontSize:12,marginBottom:3}}><span>Subtotale</span><span>{eur} {fmt(calc.sub)}</span></div>
+          {(parseFloat(form.scontoGlobale)||0)>0&&<div style={{display:"flex",justifyContent:"space-between",color:"#f87171",fontSize:12,marginBottom:3}}><span>Sconto {form.scontoGlobale}%</span><span>- {eur} {fmt(calc.sgAbs)}</span></div>}
+          <div style={{display:"flex",justifyContent:"space-between",color:"#8892a4",fontSize:12,marginBottom:3}}><span>IVA {form.aliqIva||tariff.iva}%</span><span>{eur} {fmt(calc.iva)}</span></div>
+          <div style={{display:"flex",justifyContent:"space-between",color:"#4ade80",fontSize:16,fontWeight:700,fontFamily:"Georgia,serif",borderTop:"1px solid #2d3550",paddingTop:6,marginTop:4}}><span>TOTALE</span><span>{eur} {fmt(calc.tot)}</span></div>
+        </div>
+      </div>
+
+      <F label="Modalità di pagamento"><textarea style={{...S.inp,minHeight:55,resize:"vertical"}} value={form.metodiPagamento||""} onChange={set("metodiPagamento")}/></F>
+      <F label="Note (visibili al cliente)"><textarea style={{...S.inp,minHeight:65,resize:"vertical"}} value={form.note||""} onChange={set("note")}/></F>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10,gap:8,flexWrap:"wrap"}}>
+        <button style={{...S.bGr,fontSize:12}} onClick={()=>stampaPDF(form)}>Anteprima PDF</button>
+        <div style={{display:"flex",gap:8}}>
+          <button style={S.bGr} onClick={()=>setModal(null)}>Annulla</button>
+          <button style={S.bG} onClick={salva}>Salva</button>
+        </div>
       </div>
     </Modal>}
   </div>;
@@ -1192,6 +1745,7 @@ export default function App(){
     {id:"fatturazione",l:"Fatturazione",i:"fatt"},
     {id:"dapagare",l:"Da Pagare",i:"clk",badge:daPagare},
     {id:"spese",l:"Spese",i:"eur"},
+    {id:"preventivi",l:"Preventivi",i:"fatt"},
     {id:"clienti",l:"Committenti",i:"users"},
     {id:"driver",l:"Driver",i:"car"},
   ];
@@ -1238,6 +1792,7 @@ export default function App(){
       {page==="fatturazione"&&<Fatturazione servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver}/>}
       {page==="dapagare"&&<DaPagare servizi={srvF} clienti={clienti} driver={driver} setServizi={setServizi}/>}
       {page==="spese"&&<Spese spese={spF} setSpese={setSpese} driver={driver} anno={anno}/>}
+      {page==="preventivi"&&<Preventivi/>}
       {page==="clienti"&&<Clienti clienti={clienti} setClienti={setClienti}/>}
       {page==="driver"&&<Driver driver={driver} setDriver={setDriver}/>}
     </div>
