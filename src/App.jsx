@@ -1207,7 +1207,7 @@ function Spese({spese,setSpese,driver,anno}){
       </div>;
     })}
     {spese.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessuna spesa</div>}
-    {delId&&<DelModal title="Eliminare questa spesa?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("spese",delId);setSpese(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
+    {delId&&<DelModal title={spese.find(x=>x.id===delId)?.isQuota?"Eliminare tutto l'ammortamento (tutte le quote)?":"Eliminare questa spesa?"} onClose={()=>setDelId(null)} onConfirm={async()=>{const sp=spese.find(x=>x.id===delId);if(sp?.isQuota){const base=sp.descrizione?.replace(/ (1°|anno \d+|coda).*$/,"").trim();const ids=spese.filter(x=>x.isQuota&&x.descrizione?.startsWith(base)).map(x=>x.id);for(const i of ids)await deleteRecord("spese",i);setSpese(p=>p.filter(x=>!ids.includes(x.id)));}else{await deleteRecord("spese",delId);setSpese(p=>p.filter(x=>x.id!==delId));}setDelId(null);}}/>}
     {modal&&<Modal title="Spesa" onClose={()=>setModal(null)}>
       <F label="Categoria"><select style={S.inp} value={form.tipo||""} onChange={set("tipo")}><option value="">— Seleziona —</option>{CATS.map(c=><option key={c.k} value={c.k}>{c.l}</option>)}</select></F>
       {form.tipo==="inps_anno_prec"&&<div style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#60a5fa",fontSize:12,fontWeight:700,marginBottom:3}}>INPS anno precedente</div><div style={{color:"#c8d3e0",fontSize:11}}>Dedotta dal reddito imponibile IRPEF come costo. Aliquota IVA: 0%.</div></div>}
