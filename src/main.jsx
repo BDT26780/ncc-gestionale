@@ -11,7 +11,7 @@ createRoot(document.getElementById('root')).render(
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("/sw.js")
+      .register("/ncc-gestionale/sw.js")
       .then((reg) => console.log("SW registrato:", reg.scope))
       .catch((err) => console.error("SW errore:", err));
   });

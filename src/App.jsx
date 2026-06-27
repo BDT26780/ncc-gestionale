@@ -51,7 +51,6 @@ const loadAll=async()=>{
       isQuota:r.is_quota||false,quotaNum:r.quota_num||null,
       quotaTot:r.quota_tot||null,quotaManuale:r.quota_manuale||false,
       anniAmmort:r.anni_ammort||3,pctAmmort:r.pct_ammort||25,
-      ivaCreditoFull:r.iva_credito_full||0,
       note:r.note||"",
     }));
     return{clienti,driver,servizi,spese,found:true};
@@ -113,7 +112,6 @@ const saveAll=async(clienti,driver,servizi,spese)=>{
       is_quota:r.isQuota||false,quota_num:r.quotaNum||null,
       quota_tot:r.quotaTot||null,quota_manuale:r.quotaManuale||false,
       anni_ammort:r.anniAmmort||null,pct_ammort:r.pctAmmort||null,
-      iva_credito_full:r.ivaCreditoFull||null,
       note:r.note||null,
     })));
   }
@@ -269,10 +267,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       {label:"oltre 50.000 (43%)",base:Math.max(0,baseOrd-50000),a:.43},
     ].filter(s=>s.base>0);
     const allSp=tutteSpese||[];
-    const ivaCred=allSp.reduce((a,s)=>{
-      if(s.isQuota){return a+(parseFloat(s.ivaCreditoFull)||0);}
-      const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al));
-    },0);
+    const ivaCred=allSp.reduce((a,s)=>{const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
     const ivaNet=iva-ivaCred;
     // IVA cumulativa: il credito non usato si riporta al trimestre successivo
     const trim=(()=>{
@@ -280,10 +275,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       return TRIM.map(t=>{
         const mOk=d=>t.months.includes(parseInt(d?.slice(5,7)));
         const deb=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)&&mOk(s.dataPagamento)).reduce((a,s)=>a+ivaS(s),0);
-        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{
-          if(s.isQuota){return a+(parseFloat(s.ivaCreditoFull)||0);}
-          const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al));
-        },0);
+        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
         const saldo=deb-(cred+riporto);
         const daVersare=Math.max(0,saldo);
         const nuovoCred=Math.max(0,-saldo);
@@ -1154,7 +1146,7 @@ function Spese({spese,setSpese,driver,anno}){
       const ql=[{q:qMezza,l:"1° anno ("+((pct/2)*100).toFixed(1)+"%)"}];
       for(let i=0;i<anniI;i++)ql.push({q:qPiena,l:"anno "+(i+2)+" ("+(pct*100).toFixed(0)+"%)"});
       if(res>0.01)ql.push({q:res,l:"anno "+(anniI+2)+" - coda"});
-      voci=ql.map((x,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:ql.length,importo:x.q.toFixed(2),aliqIva:i===0?form.aliqIva:"0",ivaCreditoFull:i===0?ivaI:0,data:(annoB+i)+"-12-31",descrizione:"Ammort. auto "+(form.descrizione||"")+" "+x.l+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
+      voci=ql.map((x,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:ql.length,importo:x.q.toFixed(2),aliqIva:i===0?form.aliqIva:"0",data:(annoB+i)+"-12-31",descrizione:"Ammort. auto "+(form.descrizione||"")+" "+x.l+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
     }
     if(form.tipo==="beni_durevoli"&&imp>500&&!form.isQuota&&!form.quotaManuale){
       const aliq=A2[form.aliqIva]||0;
@@ -1164,7 +1156,7 @@ function Spese({spese,setSpese,driver,anno}){
       const anni=Math.max(parseInt(form.anniAmmort)||anniMin,anniMin);
       const quota=netto/anni;
       const annoB=parseInt((form.data||today()).slice(0,4));
-      voci=Array.from({length:anni},(_,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:anni,importo:quota.toFixed(2),aliqIva:i===0?form.aliqIva:"0",ivaCreditoFull:i===0?ivaI:0,data:(annoB+i)+"-12-31",descrizione:"Ammort. bene "+(form.descrizione||"")+" quota "+(i+1)+"/"+anni+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
+      voci=Array.from({length:anni},(_,i)=>({...form,id:uid(),isQuota:true,quotaNum:i+1,quotaTot:anni,importo:quota.toFixed(2),aliqIva:i===0?form.aliqIva:"0",data:(annoB+i)+"-12-31",descrizione:"Ammort. bene "+(form.descrizione||"")+" quota "+(i+1)+"/"+anni+(i===0&&ivaI>0?" [IVA:"+ivaI.toFixed(2)+"]":"")}));
     }
     setSpese(p=>[...p.filter(x=>x.id!==form.id),...voci]);
     setModal(null);
