@@ -1136,8 +1136,8 @@ function Spese({spese,setSpese,driver,anno}){
     let voci=[{...formFinal,id:formFinal.id||uid()}];
     if(form.tipo==="acquisto_auto"&&!form.isQuota&&!form.quotaManuale){
       const aliq=A2[form.aliqIva]||0;
-      const ivaI=aliq>0?imp*aliq/(1+aliq):0;
-      const netto=imp-ivaI;
+      const ivaI=aliq>0?imp*aliq:0;
+      const netto=imp;
       const pct=(parseFloat(form.pctAmmort)||25)/100;
       const qPiena=netto*pct,qMezza=qPiena/2;
       const anniI=Math.floor((netto-qMezza)/qPiena);
@@ -1150,8 +1150,8 @@ function Spese({spese,setSpese,driver,anno}){
     }
     if(form.tipo==="beni_durevoli"&&imp>500&&!form.isQuota&&!form.quotaManuale){
       const aliq=A2[form.aliqIva]||0;
-      const ivaI=aliq>0?imp*aliq/(1+aliq):0;
-      const netto=imp-ivaI;
+      const ivaI=aliq>0?imp*aliq:0;
+      const netto=imp;
       const anniMin=Math.ceil(netto/500);
       const anni=Math.max(parseInt(form.anniAmmort)||anniMin,anniMin);
       const quota=netto/anni;
