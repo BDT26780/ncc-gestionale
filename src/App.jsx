@@ -1713,6 +1713,8 @@ export default function App(){
     const l=[...s].sort().reverse();
     const cur=String(new Date().getFullYear());
     if(!l.includes(cur))l.unshift(cur);
+    if(!l.includes("2025"))l.push("2025");
+    l.sort().reverse();
     return l;
   },[servizi,spese]);
 
