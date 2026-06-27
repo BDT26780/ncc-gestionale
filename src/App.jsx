@@ -1678,6 +1678,18 @@ export default function App(){
   })();},[]);
 
   useEffect(()=>{dataRef.current={clienti,driver,servizi,spese};},[clienti,driver,servizi,spese]);
+  const refreshData=async()=>{
+    setSaveStatus("Aggiornamento...");
+    const data=await loadAll();
+    setClientiR(data.clienti);setDriverR(data.driver);setServiziR(data.servizi);setSpeseR(data.spese);
+    dataRef.current={clienti:data.clienti,driver:data.driver,servizi:data.servizi,spese:data.spese};
+    setSaveStatus("Aggiornato");
+    setTimeout(()=>setSaveStatus(""),2000);
+  };
+  useEffect(()=>{
+    const interval=setInterval(refreshData,30000);
+    return()=>clearInterval(interval);
+  },[]);
 
   const triggerSave=()=>{
     if(saveTimer.current)clearTimeout(saveTimer.current);
@@ -1755,6 +1767,7 @@ export default function App(){
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 0",flexWrap:"wrap"}}>
         {saveStatus&&<span style={{fontSize:11,color:saveStatus.includes("Errore")?"#f87171":"#4ade80",background:"#1a1f2e",border:"1px solid #2d3550",borderRadius:6,padding:"3px 10px"}}>{saveStatus}</span>}
+        <button onClick={refreshData} style={{fontSize:11,color:"#60a5fa",background:"#1a1f2e",border:"1px solid #3b82f633",borderRadius:6,padding:"3px 10px",cursor:"pointer"}}>⟳ Aggiorna</button>
         {alerts.length>0&&<div style={{display:"flex",alignItems:"center",gap:5,background:"#7c2d1233",border:"1px solid #dc2626",borderRadius:6,padding:"4px 10px"}}><Ic n="wrn" z={13}/><span style={{color:"#f87171",fontSize:11}}>{alerts.length} scadenza critica</span></div>}
         <div style={{display:"flex",alignItems:"center",gap:5,background:"#1e2a3a",border:"1px solid #3b82f633",borderRadius:6,padding:"3px 10px"}}>
           <span style={{color:"#8892a4",fontSize:11}}>Anno:</span>
