@@ -2,7 +2,7 @@
   "name": "Black Diamond Transfert — Gestionale NCC",
   "short_name": "BDT Gestionale",
   "description": "Gestionale NCC per Black Diamond Transfert",
-  "start_url": "/",
+  "start_url": "/ncc-gestionale/",
   "display": "standalone",
   "background_color": "#0f1320",
   "theme_color": "#e8d5a3",
