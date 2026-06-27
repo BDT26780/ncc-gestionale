@@ -275,7 +275,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       return TRIM.map(t=>{
         const mOk=d=>t.months.includes(parseInt(d?.slice(5,7)));
         const deb=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)&&mOk(s.dataPagamento)).reduce((a,s)=>a+ivaS(s),0);
-        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
+        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{if(s.isQuota){if(s.quotaNum===1){const m=s.descrizione?.match(/\[IVA:([\d.]+)\]/);return a+(m?parseFloat(m[1]):0);}return a;}const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
         const saldo=deb-(cred+riporto);
         const daVersare=Math.max(0,saldo);
         const nuovoCred=Math.max(0,-saldo);
