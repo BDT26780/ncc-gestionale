@@ -649,7 +649,27 @@ function apriGCal(s,drv,cli){
     "ID: "+s.id,
     s.note?"Note: "+s.note:"",
   ].filter(Boolean).join("\n");
-  const calId="a2087dd631fb1778b0b8d4a98c79ca0c53777e53f67ce11057a3630b9a528b99@group.calendar.google.com";window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(titolo)+"&dates="+dtS+"/"+dtE+"&location="+encodeURIComponent(s.pickup||"")+"&details="+encodeURIComponent(det)+"&src="+encodeURIComponent(calId),"_blank");
+  const ics=[
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Black Diamond Transfert//NCC Gestionale//IT",
+    "BEGIN:VEVENT",
+    "UID:"+s.id+"@blackdiamondtransfert.it",
+    "DTSTAMP:"+new Date().toISOString().replace(/[-:.]/g,"").slice(0,15)+"Z",
+    "DTSTART;TZID=Europe/Rome:"+dtS,
+    "DTEND;TZID=Europe/Rome:"+dtE,
+    "SUMMARY:"+titolo,
+    "LOCATION:"+(s.pickup||""),
+    "DESCRIPTION:"+det.split("\n").join("\\n"),
+    "CATEGORIES:Lavoro NCC",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="servizio-"+s.id+".ics";a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── STATO VOLO/TRENO ──────────────────────────────────────────────────────────
