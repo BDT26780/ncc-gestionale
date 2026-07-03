@@ -649,7 +649,7 @@ function apriGCal(s,drv,cli){
     "ID: "+s.id,
     s.note?"Note: "+s.note:"",
   ].filter(Boolean).join("\n");
-  window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(titolo)+"&dates="+dtS+"/"+dtE+"&location="+encodeURIComponent(s.pickup||"")+"&details="+encodeURIComponent(det),"_blank");
+  const calId="a2087dd631fb1778b0b8d4a98c79ca0c53777e53f67ce11057a3630b9a528b99@group.calendar.google.com";window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(titolo)+"&dates="+dtS+"/"+dtE+"&location="+encodeURIComponent(s.pickup||"")+"&details="+encodeURIComponent(det)+"&src="+encodeURIComponent(calId),"_blank");
 }
 
 // ── STATO VOLO/TRENO ──────────────────────────────────────────────────────────
