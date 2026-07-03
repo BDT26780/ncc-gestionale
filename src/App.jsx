@@ -649,27 +649,7 @@ function apriGCal(s,drv,cli){
     "ID: "+s.id,
     s.note?"Note: "+s.note:"",
   ].filter(Boolean).join("\n");
-  const ics=[
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Black Diamond Transfert//NCC Gestionale//IT",
-    "BEGIN:VEVENT",
-    "UID:"+s.id+"@blackdiamondtransfert.it",
-    "DTSTAMP:"+new Date().toISOString().replace(/[-:.]/g,"").slice(0,15)+"Z",
-    "DTSTART;TZID=Europe/Rome:"+dtS,
-    "DTEND;TZID=Europe/Rome:"+dtE,
-    "SUMMARY:"+titolo,
-    "LOCATION:"+(s.pickup||""),
-    "DESCRIPTION:"+det.split("\n").join("\\n"),
-    "CATEGORIES:Lavoro NCC",
-    "END:VEVENT",
-    "END:VCALENDAR"
-  ].join("\r\n");
-  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download="servizio-"+s.id+".ics";a.click();
-  URL.revokeObjectURL(url);
+  window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(titolo)+"&dates="+dtS+"/"+dtE+"&location="+encodeURIComponent(s.pickup||"")+"&details="+encodeURIComponent(det),"_blank");
 }
 
 // ── STATO VOLO/TRENO ──────────────────────────────────────────────────────────
