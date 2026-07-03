@@ -616,7 +616,7 @@ function msgUtente(s,drv){
   const pickup=s.pickup||"";
   const dropoff=s.dropoff||"";
   const tratta=pickup&&dropoff?` da ${pickup} a ${dropoff}`:"";
-  const tipoMsg=s.tipo==="disposizione"?`per la vostra prenotazione di disposizione di ${s.oreDisp||1} ore`:`per il vostro trasferimento${tratta}`;
+  const tipoMsg=s.tipo==="disposizione"?`per la vostra prenotazione di disposizione di ${s.oreDisp||1} ore`:`per la vostra prenotazione di trasferimento${tratta}`;
   return nome?`Salve, sono ${nome} ${autista} e sono già sul posto, ${pronto} ${tipoMsg}!`:"Salve, siamo già sul posto, pronti ad accogliervi!";
 }
 const apriWA=(tel,msg)=>{
