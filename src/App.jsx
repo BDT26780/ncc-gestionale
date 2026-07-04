@@ -252,9 +252,10 @@ function Home({servizi,spese,anno,tutteSpese}){
     const xm={contanti:0,bonifico:0,carta:0,mypos:0,paypal:0};
     pag.forEach(s=>{if(s.metodoPagamento)xm[s.metodoPagamento]=(xm[s.metodoPagamento]||0)+prezzoLordo(s)});
     const taxiExtra=anno==="2025"?redditoTaxi:0;
-    const dich=(xm.bonifico||0)+(xm.carta||0)+taxiExtra;
+    const dichNCC=(xm.bonifico||0)+(xm.carta||0);
+    const dich=dichNCC+taxiExtra;
     const iva=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+ivaS(s),0);
-    const dichNetto=dich-iva;
+    const dichNetto=dichNCC-iva+taxiExtra;
     const ts=spese||[];
     const totSp=ts.filter(s=>s.tipo!=="inps_anno_prec"&&s.tipo!=="detrazioni_19"&&s.tipo!=="perdita_anno_prec").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
     const commB=ts.filter(s=>s.tipo==="comm_bon").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
@@ -329,10 +330,12 @@ function Home({servizi,spese,anno,tutteSpese}){
         <div style={{display:"flex",gap:8,alignItems:"center"}}><input type="number" id="taxi-input" style={{background:"#1a1f2e",border:"1px solid #f59e0b66",borderRadius:6,padding:"6px 10px",color:"#e8d5a3",fontSize:15,fontFamily:"Georgia,serif",flex:1}} defaultValue={redditoTaxi||""} placeholder="0"/><button onClick={()=>{const v=parseFloat(document.getElementById("taxi-input").value)||0;setRedditoTaxi(v);supa.from("tariffario").update({reddito_taxi_2025:v}).eq("id","default");}} style={{background:"#f59e0b",color:"#000",border:"none",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:12}}>Salva</button></div>
         <div style={{fontSize:11,color:"#f59e0b"}}>Totale incluso nel reddito: € {fmt(redditoTaxi)}</div>
       </Card>}
-      <Card title="Dichiarato (bonifico+carta)" col="#60a5fa">
+      <Card title="Reddito totale 2025" col="#60a5fa">
         <Big val={st.dich} col="#60a5fa"/>
-        <Row l="Imponibile netto" v={fmt(st.dichNetto)}/>
-        <Row l="IVA 10% a debito" v={fmt(st.iva)}/>
+        <Row l="NCC (bonifico+carta)" v={fmt(st.dichNCC||((xm=>((xm.bonifico||0)+(xm.carta||0)))(st.xm)))}/>
+        {redditoTaxi>0&&<Row l="Taxi (esente IVA)" v={fmt(redditoTaxi)}/>}
+        <Row l="Imponibile netto NCC" v={fmt((st.dichNCC||(st.dich-redditoTaxi))-st.iva)}/>
+        <Row l="IVA 10% a debito (solo NCC)" v={fmt(st.iva)}/>
       </Card>
       <Card title="Regime Forfettario ATECO 49.33.20" col="#a78bfa">
         <Row l="Ricavi dichiarati (bonifico+carta)" v={fmt(st.dich)}/>
