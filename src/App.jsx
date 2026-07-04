@@ -1312,7 +1312,7 @@ async function loadPrevTariff(){
 async function savePrevList(list){
   if(!list.length)return;
   const {error}=await supa.from("preventivi").upsert(list.map(p=>({
-    id:p.id,data:p.data||null,validita:parseInt(p.validita)||30,
+    id:p.id,numero:p.id,data:p.data||null,validita:parseInt(p.validita)||30,
     nome_cliente:p.clienteNome||null,email_cliente:p.clienteEmail||null,
     telefono_cli:p.telefonoCli||null,cliente_ref:p.clienteRef||null,
     veicolo:p.veicolo||null,giorno_servizio:p.giornoServizio||null,
