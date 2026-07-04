@@ -1353,6 +1353,7 @@ async function calcolaKm(da,a){
 }
 function Preventivi({refreshTick=0}){
   const [preventivi,setPrevR]=useState([]);
+  const [kmStatus,setKmStatus]=useState("");
   const [tariff,setTariff]=useState({prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10});
   const [modal,setModal]=useState(null);
   const [form,setForm]=useState({});
@@ -1609,13 +1610,13 @@ function Preventivi({refreshTick=0}){
       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
         <button onClick={async()=>{
           if(!form.luogoDa||!form.luogoA)return alert("Inserire partenza e destinazione");
-          setSaveStatus("Calcolo km...");
+          setKmStatus("Calcolo in corso...");
           const km=await calcolaKm(form.luogoDa,form.luogoA);
-          if(km){setForm(p=>({...p,kmCalcolati:km}));setSaveStatus("Km calcolati: "+km+" km");}
-          else setSaveStatus("Errore calcolo km");
-          setTimeout(()=>setSaveStatus(""),3000);
+          if(km){setForm(p=>({...p,kmCalcolati:km}));setKmStatus(km+" km");}
+          else setKmStatus("Errore calcolo");
+          setTimeout(()=>setKmStatus(""),5000);
         }} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"6px 14px",cursor:"pointer",fontSize:12}}>📍 Calcola km</button>
-        {form.kmCalcolati&&<span style={{color:"#4ade80",fontSize:13,fontWeight:700}}>{form.kmCalcolati} km</span>}
+        {kmStatus&&<span style={{color:"#4ade80",fontSize:13,fontWeight:700}}>{kmStatus}</span>}
       </div>
       <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:1,margin:"12px 0 8px",borderTop:"1px solid #2d3550",paddingTop:12}}>Voci del preventivo</div>
       {(form.righe||[]).map((r)=>(
