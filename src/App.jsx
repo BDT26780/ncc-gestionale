@@ -702,8 +702,9 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     setServizi(p=>{const ex=p.find(s=>s.id===form.id);return ex?p.map(s=>s.id===form.id?form:s):[...p,form]});
     setModal(null);
   };
+  const [mostraTutti,setMostraTutti]=useState(false);
   const filtered=servizi.filter(s=>{
-    if(s.dataPagamento&&!filter)return false;
+    if(s.dataPagamento&&!filter&&!mostraTutti)return false;
     if(!filter)return true;
     const q=filter.toLowerCase();
     return s.id?.toLowerCase().includes(q)||
@@ -723,7 +724,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8892a4",pointerEvents:"none"}}><Ic n="src" z={14}/></span>
     </div>
     {!filter&&nPagati>0&&<div style={{fontSize:12,color:"#6b7280",marginBottom:10,padding:"6px 10px",background:"#1a1f2e",borderRadius:6,border:"1px solid #2d3550"}}>
-      {nPagati} servizi pagati nascosti — cerca per ID, nome, committente o volo per trovarli
+      {mostraTutti?"Nascondo i pagati":""+nPagati+" servizi pagati nascosti — cerca o premi Mostra tutti"}
     </div>}
 
     {filtered.map(s=>{
