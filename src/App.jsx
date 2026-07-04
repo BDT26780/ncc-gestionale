@@ -243,7 +243,7 @@ function Home({servizi,spese,anno,tutteSpese}){
   const [showSpeseDett,setShowSpeseDett]=useState(false);
   const [ivaRiportata,setIvaRiportata]=useState(0);
   useEffect(()=>{if(anno&&anno!=="tutti"){supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single().then(({data})=>{const r=data?.iva_credito_riportato||{};const annoPrev=String(parseInt(anno)-1);setIvaRiportata(parseFloat(r[annoPrev])||0);});}},[anno]);
-  const salvaRiportoAnno=async()=>{const residuo=st.trim[3]?.nuovoCred||0;const {data}=await supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single();const r=data?.iva_credito_riportato||{};r[anno]=residuo;await supa.from("tariffario").update({iva_credito_riportato:r}).eq("id","default");alert("Riporto IVA "+anno+" salvato: euro"+residuo.toFixed(2));};
+  const salvaRiportoAnno=async()=>{const {data}=await supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single();const r=data?.iva_credito_riportato||{};const giaSalvato=parseFloat(r[anno]);const residuo=!isNaN(giaSalvato)?giaSalvato:(st.trim[3]?.nuovoCred||0);r[anno]=residuo;await supa.from("tariffario").update({iva_credito_riportato:r}).eq("id","default");alert("Riporto IVA "+anno+" → "+String(parseInt(anno)+1)+": euro"+residuo.toFixed(2));};
   const [redditoTaxi,setRedditoTaxi]=useState(0);
   useEffect(()=>{supa.from("tariffario").select("reddito_taxi_2025").eq("id","default").single().then(({data})=>{if(data?.reddito_taxi_2025)setRedditoTaxi(parseFloat(data.reddito_taxi_2025)||0);});},[]);
   const st=useMemo(()=>{
