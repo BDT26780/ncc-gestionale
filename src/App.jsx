@@ -241,6 +241,9 @@ const calcIRPEF=base=>{
 // ── HOME ──────────────────────────────────────────────────────────────────────
 function Home({servizi,spese,anno,tutteSpese}){
   const [showSpeseDett,setShowSpeseDett]=useState(false);
+  const [ivaRiportata,setIvaRiportata]=useState(0);
+  useEffect(()=>{if(anno&&anno!=="tutti"){supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single().then(({data})=>{const r=data?.iva_credito_riportato||{};const annoPrev=String(parseInt(anno)-1);setIvaRiportata(parseFloat(r[annoPrev])||0);});}},[anno]);
+  const salvaRiportoAnno=async()=>{const residuo=st.trim[3]?.nuovoCred||0;const {data}=await supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single();const r=data?.iva_credito_riportato||{};r[anno]=residuo;await supa.from("tariffario").update({iva_credito_riportato:r}).eq("id","default");alert("Riporto IVA "+anno+" salvato: euro"+residuo.toFixed(2));};
   const [redditoTaxi,setRedditoTaxi]=useState(0);
   useEffect(()=>{supa.from("tariffario").select("reddito_taxi_2025").eq("id","default").single().then(({data})=>{if(data?.reddito_taxi_2025)setRedditoTaxi(parseFloat(data.reddito_taxi_2025)||0);});},[]);
   const st=useMemo(()=>{
@@ -274,7 +277,7 @@ function Home({servizi,spese,anno,tutteSpese}){
     const ivaNet=iva-ivaCred;
     // IVA cumulativa: il credito non usato si riporta al trimestre successivo
     const trim=(()=>{
-      let riporto=0;
+      let riporto=ivaRiportata;
       return TRIM.map(t=>{
         const mOk=d=>t.months.includes(parseInt(d?.slice(5,7)));
         const deb=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)&&mOk(s.dataPagamento)).reduce((a,s)=>a+ivaS(s),0);
@@ -390,7 +393,11 @@ function Home({servizi,spese,anno,tutteSpese}){
 
     {/* IVA COMPENSAZIONE */}
     <div style={{marginTop:16}}>
-      <h3 style={{...S.gld,margin:"0 0 12px",fontSize:15}}>IVA — Compensazione {anno!=="tutti"?anno:""}</h3>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+        <h3 style={{...S.gld,margin:0,fontSize:15}}>IVA — Compensazione {anno!=="tutti"?anno:""}</h3>
+        {anno!=="tutti"&&<button onClick={salvaRiportoAnno} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"5px 12px",cursor:"pointer",fontSize:11}}>📋 Chiudi anno e riporta IVA</button>}
+      </div>
+      {ivaRiportata>0&&<div style={{background:"#1a2a1a",border:"1px solid #4ade8044",borderRadius:6,padding:"6px 12px",marginBottom:8,fontSize:11,color:"#4ade80"}}>↩ Credito IVA riportato dall'anno precedente: {fmt(ivaRiportata)}</div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:10,marginBottom:12}}>
         {[
           {label:"IVA a Debito",val:st.iva,col:"#f87171",sub:"Servizi bonifico+carta"},
