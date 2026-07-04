@@ -241,12 +241,14 @@ const calcIRPEF=base=>{
 // ── HOME ──────────────────────────────────────────────────────────────────────
 function Home({servizi,spese,anno,tutteSpese}){
   const [showSpeseDett,setShowSpeseDett]=useState(false);
+  const [redditoTaxi,setRedditoTaxi]=useState(()=>{try{return parseFloat(localStorage.getItem("reddito_taxi_2025")||"0");}catch{return 0;}});
   const st=useMemo(()=>{
     const pag=servizi.filter(s=>s.dataPagamento);
     const tot=pag.reduce((a,s)=>a+prezzoLordo(s),0);
     const xm={contanti:0,bonifico:0,carta:0,mypos:0,paypal:0};
     pag.forEach(s=>{if(s.metodoPagamento)xm[s.metodoPagamento]=(xm[s.metodoPagamento]||0)+prezzoLordo(s)});
-    const dich=(xm.bonifico||0)+(xm.carta||0);
+    const taxiExtra=anno==="2025"?redditoTaxi:0;
+    const dich=(xm.bonifico||0)+(xm.carta||0)+taxiExtra;
     const iva=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+ivaS(s),0);
     const dichNetto=dich-iva;
     const ts=spese||[];
@@ -318,6 +320,11 @@ function Home({servizi,spese,anno,tutteSpese}){
         <Big val={st.tot}/>
         {Object.entries(st.xm).map(([k,v])=><Row key={k} l={k} v={fmt(v)} s/>)}
       </Card>
+      {anno==="2025"&&<Card title="Reddito Taxi 2025 (esente IVA)" col="#f59e0b">
+        <div style={{fontSize:11,color:"#c8d3e0",marginBottom:8}}>Reddito da attività taxi precedente all'NCC — esente IVA, sommato al reddito NCC per IRPEF</div>
+        <input type="number" style={{background:"#1a1f2e",border:"1px solid #f59e0b66",borderRadius:6,padding:"6px 10px",color:"#e8d5a3",fontSize:15,fontFamily:"Georgia,serif",width:"100%",marginBottom:4}} value={redditoTaxi||""} placeholder="0" onChange={e=>{const v=parseFloat(e.target.value)||0;setRedditoTaxi(v);try{localStorage.setItem("reddito_taxi_2025",v);}catch{}}} />
+        <div style={{fontSize:11,color:"#f59e0b"}}>Totale incluso nel reddito: € {fmt(redditoTaxi)}</div>
+      </Card>}
       <Card title="Dichiarato (bonifico+carta)" col="#60a5fa">
         <Big val={st.dich} col="#60a5fa"/>
         <Row l="Imponibile netto" v={fmt(st.dichNetto)}/>
