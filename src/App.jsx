@@ -1607,28 +1607,11 @@ function Preventivi({refreshTick=0}){
 
       <div style={{display:"flex",gap:10}}>
         <div style={{flex:1,position:"relative"}}>
-          <F label="Partenza (per calcolo km)"><input style={S.inp} value={form.luogoDa||""} onChange={async e=>{setForm(p=>({...p,luogoDa:e.target.value}));if(e.target.value.length>2){const r=await fetch("https://api.openrouteservice.org/geocode/autocomplete?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM4NDhkMTkzNzE4YTQ0ZjhiMjc2MmFkZDkxMDNjMWNhIiwiaCI6Im11cm11cjY0In0=&text="+encodeURIComponent(e.target.value)+"&boundary.country=IT&size=5");const d=await r.json();setSugDa(d.features?.map(f=>f.properties.label)||[]);}else setSugDa([]);}} placeholder="Es. Milano Centrale"/></F>
-          {sugDa.length>0&&<div style={{position:"absolute",zIndex:100,background:"#1a1f2e",border:"1px solid #3b82f6",borderRadius:6,width:"100%",maxHeight:180,overflowY:"auto"}}>
-            {sugDa.map((s,i)=><div key={i} onClick={()=>{setForm(p=>({...p,luogoDa:s}));setSugDa([]);}} style={{padding:"8px 12px",cursor:"pointer",color:"#c8d3e0",fontSize:12,borderBottom:"1px solid #2d3550"}}>{s}</div>)}
-          </div>}
+          <F label="Partenza (per calcolo km)"><input style={S.inp} value={form.luogoDa||""} onChange={e=>setForm(p=>({...p,luogoDa:e.target.value}))} placeholder="Es. Milano Centrale"/></F>
         </div>
         <div style={{flex:1,position:"relative"}}>
-          <F label="Destinazione (per calcolo km)"><input style={S.inp} value={form.luogoA||""} onChange={async e=>{setForm(p=>({...p,luogoA:e.target.value}));if(e.target.value.length>2){const r=await fetch("https://api.openrouteservice.org/geocode/autocomplete?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM4NDhkMTkzNzE4YTQ0ZjhiMjc2MmFkZDkxMDNjMWNhIiwiaCI6Im11cm11cjY0In0=&text="+encodeURIComponent(e.target.value)+"&boundary.country=IT&size=5");const d=await r.json();setSugA(d.features?.map(f=>f.properties.label)||[]);}else setSugA([]);}} placeholder="Es. Malpensa T1"/></F>
-          {sugA.length>0&&<div style={{position:"absolute",zIndex:100,background:"#1a1f2e",border:"1px solid #3b82f6",borderRadius:6,width:"100%",maxHeight:180,overflowY:"auto"}}>
-            {sugA.map((s,i)=><div key={i} onClick={()=>{setForm(p=>({...p,luogoA:s}));setSugA([]);}} style={{padding:"8px 12px",cursor:"pointer",color:"#c8d3e0",fontSize:12,borderBottom:"1px solid #2d3550"}}>{s}</div>)}
-          </div>}
+          <F label="Destinazione (per calcolo km)"><input style={S.inp} value={form.luogoA||""} onChange={e=>setForm(p=>({...p,luogoA:e.target.value}))} placeholder="Es. Malpensa T1"/></F>
         </div>
-      </div>
-      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
-        <button onClick={async()=>{
-          if(!form.luogoDa||!form.luogoA)return alert("Inserire partenza e destinazione");
-          setKmStatus("Calcolo in corso...");
-          const km=await calcolaKm(form.luogoDa,form.luogoA);
-          if(km){setForm(p=>({...p,kmCalcolati:km}));setKmStatus(km+" km");}
-          else setKmStatus("Errore calcolo");
-          setTimeout(()=>setKmStatus(""),5000);
-        }} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"6px 14px",cursor:"pointer",fontSize:12}}>📍 Calcola km</button>
-        {kmStatus&&<span style={{color:"#4ade80",fontSize:13,fontWeight:700}}>{kmStatus}</span>}
       </div>
       <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:1,margin:"12px 0 8px",borderTop:"1px solid #2d3550",paddingTop:12}}>Voci del preventivo</div>
       {(form.righe||[]).map((r)=>(
