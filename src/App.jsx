@@ -1354,6 +1354,8 @@ async function calcolaKm(da,a){
 function Preventivi({refreshTick=0}){
   const [preventivi,setPrevR]=useState([]);
   const [kmStatus,setKmStatus]=useState("");
+  const [sugDa,setSugDa]=useState([]);
+  const [sugA,setSugA]=useState([]);
   const [tariff,setTariff]=useState({prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10});
   const [modal,setModal]=useState(null);
   const [form,setForm]=useState({});
@@ -1604,8 +1606,18 @@ function Preventivi({refreshTick=0}){
       </div>
 
       <div style={{display:"flex",gap:10}}>
-        <F label="Partenza (per calcolo km)" w="50%"><input style={S.inp} value={form.luogoDa||""} onChange={set("luogoDa")} placeholder="Es. Milano Centrale"/></F>
-        <F label="Destinazione (per calcolo km)" w="50%"><input style={S.inp} value={form.luogoA||""} onChange={set("luogoA")} placeholder="Es. Malpensa T1"/></F>
+        <div style={{flex:1,position:"relative"}}>
+          <F label="Partenza (per calcolo km)"><input style={S.inp} value={form.luogoDa||""} onChange={async e=>{setForm(p=>({...p,luogoDa:e.target.value}));if(e.target.value.length>2){const r=await fetch("https://api.openrouteservice.org/geocode/autocomplete?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM4NDhkMTkzNzE4YTQ0ZjhiMjc2MmFkZDkxMDNjMWNhIiwiaCI6Im11cm11cjY0In0=&text="+encodeURIComponent(e.target.value)+"&boundary.country=IT&size=5");const d=await r.json();setSugDa(d.features?.map(f=>f.properties.label)||[]);}else setSugDa([]);}} placeholder="Es. Milano Centrale"/></F>
+          {sugDa.length>0&&<div style={{position:"absolute",zIndex:100,background:"#1a1f2e",border:"1px solid #3b82f6",borderRadius:6,width:"100%",maxHeight:180,overflowY:"auto"}}>
+            {sugDa.map((s,i)=><div key={i} onClick={()=>{setForm(p=>({...p,luogoDa:s}));setSugDa([]);}} style={{padding:"8px 12px",cursor:"pointer",color:"#c8d3e0",fontSize:12,borderBottom:"1px solid #2d3550"}}>{s}</div>)}
+          </div>}
+        </div>
+        <div style={{flex:1,position:"relative"}}>
+          <F label="Destinazione (per calcolo km)"><input style={S.inp} value={form.luogoA||""} onChange={async e=>{setForm(p=>({...p,luogoA:e.target.value}));if(e.target.value.length>2){const r=await fetch("https://api.openrouteservice.org/geocode/autocomplete?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM4NDhkMTkzNzE4YTQ0ZjhiMjc2MmFkZDkxMDNjMWNhIiwiaCI6Im11cm11cjY0In0=&text="+encodeURIComponent(e.target.value)+"&boundary.country=IT&size=5");const d=await r.json();setSugA(d.features?.map(f=>f.properties.label)||[]);}else setSugA([]);}} placeholder="Es. Malpensa T1"/></F>
+          {sugA.length>0&&<div style={{position:"absolute",zIndex:100,background:"#1a1f2e",border:"1px solid #3b82f6",borderRadius:6,width:"100%",maxHeight:180,overflowY:"auto"}}>
+            {sugA.map((s,i)=><div key={i} onClick={()=>{setForm(p=>({...p,luogoA:s}));setSugA([]);}} style={{padding:"8px 12px",cursor:"pointer",color:"#c8d3e0",fontSize:12,borderBottom:"1px solid #2d3550"}}>{s}</div>)}
+          </div>}
+        </div>
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
         <button onClick={async()=>{
