@@ -395,7 +395,10 @@ function Home({servizi,spese,anno,tutteSpese}){
     <div style={{marginTop:16}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
         <h3 style={{...S.gld,margin:0,fontSize:15}}>IVA — Compensazione {anno!=="tutti"?anno:""}</h3>
-        {anno!=="tutti"&&<button onClick={salvaRiportoAnno} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"5px 12px",cursor:"pointer",fontSize:11}}>📋 Chiudi anno e riporta IVA</button>}
+        {anno!=="tutti"&&<div style={{display:"flex",gap:6}}>
+          <button onClick={salvaRiportoAnno} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"5px 12px",cursor:"pointer",fontSize:11}}>📋 Riporta IVA anno succ.</button>
+          <button onClick={async()=>{const {data}=await supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single();const r=data?.iva_credito_riportato||{};r[anno]=0;await supa.from("tariffario").update({iva_credito_riportato:r}).eq("id","default");setIvaRiportata(0);alert("IVA "+anno+" azzerata — usata in compensazione F24");}} style={{background:"#1e2a3a",border:"1px solid #f87171",borderRadius:5,color:"#f87171",padding:"5px 12px",cursor:"pointer",fontSize:11}}>✓ Usata in compensazione F24</button>
+        </div>}
       </div>
       {ivaRiportata>0&&<div style={{background:"#1a2a1a",border:"1px solid #4ade8044",borderRadius:6,padding:"6px 12px",marginBottom:8,fontSize:11,color:"#4ade80"}}>↩ Credito IVA riportato dall'anno precedente: {fmt(ivaRiportata)}</div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:10,marginBottom:12}}>
