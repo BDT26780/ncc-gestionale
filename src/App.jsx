@@ -1444,13 +1444,21 @@ function Preventivi({refreshTick=0}){
     const cc=calcolaPrev(prev,tariff);
     const righeVis=(prev.righe||[]).filter(r=>!r.nascosta);
     const dataBella=prev.data?new Date(prev.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"";
-    return <div style={{background:"#fff",minHeight:"100vh",fontFamily:"Arial,sans-serif",fontSize:13,color:"#111",padding:28,margin:"-18px"}}>
+    return <div data-preventivo="true" style={{background:"#fff",minHeight:"100vh",fontFamily:"Arial,sans-serif",fontSize:13,color:"#111",padding:28,margin:"-18px"}}>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:20,borderBottom:"1px solid #ddd",paddingBottom:12}} className="no-print">
         <button onClick={()=>setAnteprimaPrev(null)} style={{background:"#f0f0f0",border:"1px solid #ccc",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13}}>← Torna</button>
         <button onClick={()=>window.print()} style={{background:"#111",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>🖨 Stampa / Salva PDF</button>
         {prev.telefonoCli&&<button onClick={()=>{const tel=(prev.telefonoCli||"").replace(/[^0-9+]/g,"");const msg="Gentile "+prev.clienteNome+",\ncome concordato Le invio in allegato il preventivo n. "+prev.id+" di Black Diamond Transfert.\nResto a disposizione per qualsiasi informazione.\nCordiali saluti,\nBlack Diamond Transfert";window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{background:"#25d366",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>📤 Invia via WhatsApp</button>}
       </div>
-      <style>{`@media print{.no-print{display:none!important}}`}</style>
+      <style>{`
+        @media print {
+          .no-print{display:none!important}
+          * { color: #000 !important; background: #fff !important; border-color: #999 !important; -webkit-print-color-adjust: exact; }
+          body { margin: 0 !important; padding: 0 !important; }
+          table { border-collapse: collapse !important; }
+          td, th { border: 1px solid #999 !important; padding: 4px 8px !important; }
+        }
+      `}</style>
       <div style={{textAlign:"center",borderBottom:"2px solid #111",paddingBottom:14,marginBottom:18}}>
         <div style={{fontSize:15,fontWeight:"bold",letterSpacing:.5,marginBottom:6}}>{AZIENDA.nome}</div>
         <div style={{fontSize:12,lineHeight:1.7}}>
