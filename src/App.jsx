@@ -273,7 +273,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       {label:"28.001-50.000 (35%)",base:Math.min(Math.max(0,baseOrd-28000),22000),a:.35},
       {label:"oltre 50.000 (43%)",base:Math.max(0,baseOrd-50000),a:.43},
     ].filter(s=>s.base>0);
-    const allSp=tutteSpese||[];
+    const allSp=spese||[];
     const ivaCred=allSp.reduce((a,s)=>{if(s.isQuota){if(s.quotaNum===1){const m=s.descrizione?.match(/\[IVA:([\d.]+)\]/);return a+(m?parseFloat(m[1]):0);}return a;}const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
     const ivaNet=iva-ivaCred;
     // IVA cumulativa: il credito non usato si riporta al trimestre successivo
