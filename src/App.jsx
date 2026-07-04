@@ -333,7 +333,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       <Card title="Reddito totale 2025" col="#60a5fa">
         <Big val={st.dich} col="#60a5fa"/>
         <Row l="NCC (bonifico+carta)" v={fmt(st.dichNCC||((xm=>((xm.bonifico||0)+(xm.carta||0)))(st.xm)))}/>
-        {redditoTaxi>0&&<Row l="Taxi (esente IVA)" v={fmt(redditoTaxi)}/>}
+        {redditoTaxi>0&&anno==="2025"&&<Row l="Taxi (esente IVA)" v={fmt(redditoTaxi)}/>}
         <Row l="Imponibile netto NCC" v={fmt((st.dichNCC||(st.dich-redditoTaxi))-st.iva)}/>
         <Row l="IVA 10% a debito (solo NCC)" v={fmt(st.iva)}/>
       </Card>
