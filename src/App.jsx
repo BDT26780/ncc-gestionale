@@ -1311,7 +1311,7 @@ async function loadPrevTariff(){
 
 async function savePrevList(list){
   if(!list.length)return;
-  await supa.from("preventivi").upsert(list.map(p=>({
+  const {error}=await supa.from("preventivi").upsert(list.map(p=>({
     id:p.id,data:p.data||null,validita:p.validita||30,
     nome_cliente:p.clienteNome||null,cliente_email:p.clienteEmail||null,
     telefono_cli:p.telefonoCli||null,cliente_ref:p.clienteRef||null,
@@ -1321,6 +1321,7 @@ async function savePrevList(list){
     metodi_pagamento:p.metodiPagamento||null,note:p.note||null,
     committente_id:p.committenteId||null,stato:p.stato||"bozza",
   })));
+  if(error)console.error("savePrevList error:",error);
 }
 
 async function saveTariffario(t){
