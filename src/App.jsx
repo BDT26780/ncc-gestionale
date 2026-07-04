@@ -1423,6 +1423,7 @@ function Preventivi(){
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:20,borderBottom:"1px solid #ddd",paddingBottom:12}} className="no-print">
         <button onClick={()=>setAnteprimaPrev(null)} style={{background:"#f0f0f0",border:"1px solid #ccc",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13}}>← Torna</button>
         <button onClick={()=>window.print()} style={{background:"#111",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>🖨 Stampa / Salva PDF</button>
+        {prev.telefonoCli&&<button onClick={()=>{const tel=(prev.telefonoCli||"").replace(/[^0-9+]/g,"");const msg="Gentile "+prev.clienteNome+",\ncome concordato Le invio in allegato il preventivo n. "+prev.id+" di Black Diamond Transfert.\nResto a disposizione per qualsiasi informazione.\nCordiali saluti,\nBlack Diamond Transfert";window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{background:"#25d366",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>📤 Invia via WhatsApp</button>}
       </div>
       <style>{`@media print{.no-print{display:none!important}}`}</style>
       <div style={{textAlign:"center",borderBottom:"2px solid #111",paddingBottom:14,marginBottom:18}}>
