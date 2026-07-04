@@ -1331,6 +1331,26 @@ async function saveTariffario(t){
   });
 }
 
+const ORS_KEY="eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM4NDhkMTkzNzE4YTQ0ZjhiMjc2MmFkZDkxMDNjMWNhIiwiaCI6Im11cm11cjY0In0=";
+async function calcolaKm(da,a){
+  try{
+    const geo=async q=>{
+      const r=await fetch("https://api.openrouteservice.org/geocode/search?api_key="+ORS_KEY+"&text="+encodeURIComponent(q+", Italia")+"&size=1");
+      const d=await r.json();
+      return d.features?.[0]?.geometry?.coordinates;
+    };
+    const [cA,cB]=await Promise.all([geo(da),geo(a)]);
+    if(!cA||!cB)return null;
+    const r=await fetch("https://api.openrouteservice.org/v2/directions/driving-car",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":ORS_KEY},
+      body:JSON.stringify({coordinates:[cA,cB]})
+    });
+    const d=await r.json();
+    const m=d.routes?.[0]?.summary?.distance;
+    return m?Math.round(m/1000):null;
+  }catch(e){console.error("calcolaKm",e);return null;}
+}
 function Preventivi({refreshTick=0}){
   const [preventivi,setPrevR]=useState([]);
   const [tariff,setTariff]=useState({prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10});
@@ -1582,6 +1602,21 @@ function Preventivi({refreshTick=0}){
         <F label="Titolo servizio" w="50%"><input style={S.inp} value={form.titoloServizio||""} onChange={set("titoloServizio")} placeholder="Es. TRASFERIMENTO E DISPOSIZIONE"/></F>
       </div>
 
+      <div style={{display:"flex",gap:10}}>
+        <F label="Partenza (per calcolo km)" w="50%"><input style={S.inp} value={form.luogoDa||""} onChange={set("luogoDa")} placeholder="Es. Milano Centrale"/></F>
+        <F label="Destinazione (per calcolo km)" w="50%"><input style={S.inp} value={form.luogoA||""} onChange={set("luogoA")} placeholder="Es. Malpensa T1"/></F>
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
+        <button onClick={async()=>{
+          if(!form.luogoDa||!form.luogoA)return alert("Inserire partenza e destinazione");
+          setSaveStatus("Calcolo km...");
+          const km=await calcolaKm(form.luogoDa,form.luogoA);
+          if(km){setForm(p=>({...p,kmCalcolati:km}));setSaveStatus("Km calcolati: "+km+" km");}
+          else setSaveStatus("Errore calcolo km");
+          setTimeout(()=>setSaveStatus(""),3000);
+        }} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"6px 14px",cursor:"pointer",fontSize:12}}>📍 Calcola km</button>
+        {form.kmCalcolati&&<span style={{color:"#4ade80",fontSize:13,fontWeight:700}}>{form.kmCalcolati} km</span>}
+      </div>
       <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:1,margin:"12px 0 8px",borderTop:"1px solid #2d3550",paddingTop:12}}>Voci del preventivo</div>
       {(form.righe||[]).map((r)=>(
         <div key={r.id} style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:6,padding:10,marginBottom:8}}>
