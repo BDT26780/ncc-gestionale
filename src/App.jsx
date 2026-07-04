@@ -323,7 +323,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       </Card>
       {anno==="2025"&&<Card title="Reddito Taxi 2025 (esente IVA)" col="#f59e0b">
         <div style={{fontSize:11,color:"#c8d3e0",marginBottom:8}}>Reddito da attività taxi precedente all'NCC — esente IVA, sommato al reddito NCC per IRPEF</div>
-        <input type="number" style={{background:"#1a1f2e",border:"1px solid #f59e0b66",borderRadius:6,padding:"6px 10px",color:"#e8d5a3",fontSize:15,fontFamily:"Georgia,serif",width:"100%",marginBottom:4}} value={redditoTaxi||""} placeholder="0" onChange={e=>{const v=parseFloat(e.target.value)||0;setRedditoTaxi(v);supa.from("tariffario").update({reddito_taxi_2025:v}).eq("id","default");}} />
+        <input type="number" style={{background:"#1a1f2e",border:"1px solid #f59e0b66",borderRadius:6,padding:"6px 10px",color:"#e8d5a3",fontSize:15,fontFamily:"Georgia,serif",width:"100%",marginBottom:4}} defaultValue={redditoTaxi||""} placeholder="0" onBlur={e=>{const v=parseFloat(e.target.value)||0;setRedditoTaxi(v);supa.from("tariffario").update({reddito_taxi_2025:v}).eq("id","default");}} />
         <div style={{fontSize:11,color:"#f59e0b"}}>Totale incluso nel reddito: € {fmt(redditoTaxi)}</div>
       </Card>}
       <Card title="Dichiarato (bonifico+carta)" col="#60a5fa">
