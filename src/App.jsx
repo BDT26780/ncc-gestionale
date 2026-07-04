@@ -1330,7 +1330,7 @@ async function saveTariffario(t){
   });
 }
 
-function Preventivi(){
+function Preventivi({refreshTick=0}){
   const [preventivi,setPrevR]=useState([]);
   const [tariff,setTariff]=useState({prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10});
   const [modal,setModal]=useState(null);
@@ -1352,6 +1352,7 @@ function Preventivi(){
   };
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
 
+  useEffect(()=>{if(refreshTick>0){loadPrevTariff().then(({preventivi:p,tariff:t})=>{setPrevR(p);setTariff(t);});}},[refreshTick]);
   const nuovoPreventivo=()=>{
     setForm({
       id:uid(),data:today(),validita:"30",
@@ -1680,11 +1681,13 @@ export default function App(){
   })();},[]);
 
   useEffect(()=>{dataRef.current={clienti,driver,servizi,spese};},[clienti,driver,servizi,spese]);
+  const [refreshTick,setRefreshTick]=useState(0);
   const refreshData=async()=>{
     setSaveStatus("Aggiornamento...");
     const data=await loadAll();
     setClientiR(data.clienti);setDriverR(data.driver);setServiziR(data.servizi);setSpeseR(data.spese);
     dataRef.current={clienti:data.clienti,driver:data.driver,servizi:data.servizi,spese:data.spese};
+    setRefreshTick(t=>t+1);
     setSaveStatus("Aggiornato");
     setTimeout(()=>setSaveStatus(""),2000);
   };
@@ -1801,7 +1804,7 @@ export default function App(){
       {page==="fatturazione"&&<Fatturazione servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver}/>}
       {page==="dapagare"&&<DaPagare servizi={srvF} clienti={clienti} driver={driver} setServizi={setServizi}/>}
       {page==="spese"&&<Spese spese={spF} setSpese={setSpese} driver={driver} anno={anno}/>}
-      {page==="preventivi"&&<Preventivi/>}
+      {page==="preventivi"&&<Preventivi refreshTick={refreshTick}/>}
       {page==="clienti"&&<Clienti clienti={clienti} setClienti={setClienti}/>}
       {page==="driver"&&<Driver driver={driver} setDriver={setDriver}/>}
     </div>
