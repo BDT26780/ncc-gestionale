@@ -836,7 +836,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
         <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"4vw"}}>◆</div>
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
-      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"22vw":cartelloPass.length<=14?"17vw":cartelloPass.length<=20?"13vw":cartelloPass.length<=28?"10vw":"8vw",wordBreak:"break-word",maxWidth:"90vw"}}>{cartelloPass.toUpperCase()}</div>
+      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"22vw":cartelloPass.length<=14?"17vw":cartelloPass.length<=20?"13vw":cartelloPass.length<=28?"10vw":"8vw",wordBreak:"break-word",maxWidth:"90vw",transition:"margin 0.3s",marginTop:intestazioneVisible?"0":"auto",marginBottom:intestazioneVisible?"0":"auto"}}>{cartelloPass.toUpperCase()}</div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
     </div>}
     {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
@@ -1505,7 +1505,7 @@ function Preventivi({refreshTick=0}){
           table { border-collapse: collapse !important; }
           td, th { border: 1px solid #999 !important; padding: 4px 8px !important; }
         }
-        @media (hover: none) { .no-touch-only { display: none !important; } }
+        @media (pointer: coarse) { .no-touch-only { display: none !important; } }
       `}</style>
       <div style={{textAlign:"center",borderBottom:"2px solid #111",paddingBottom:14,marginBottom:18}}>
         <div style={{fontSize:15,fontWeight:"bold",letterSpacing:.5,marginBottom:6}}>{AZIENDA.nome}</div>
