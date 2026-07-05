@@ -829,11 +829,11 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     {cartelloPass&&<div
       style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:28,padding:"40px"}}
       onTouchEnd={e=>{const now=Date.now();if(now-lastTap.current<350){setCartelloPass(null);setIntestazioneVisible(true);}lastTap.current=now;}}
-      onClick={e=>{if(e.detail===2){setCartelloPass(null);setIntestazioneVisible(true);}}}
+      onDoubleClick={()=>{setCartelloPass(null);setIntestazioneVisible(true);}}
     >
 
       <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer",opacity:intestazioneVisible?1:0,transition:"opacity 0.3s",minHeight:"12vw"}}>
-        <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:"4.5vw",letterSpacing:3,textTransform:"uppercase",textAlign:"center",whiteSpace:"nowrap"}}>Black Diamond Transfert</div>
+        <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"6vw"}}>◆</div>
         <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"4vw"}}>◆</div>
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
