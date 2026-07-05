@@ -831,7 +831,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       onTouchEnd={e=>{const now=Date.now();if(now-lastTap.current<350){setCartelloPass(null);setIntestazioneVisible(true);}lastTap.current=now;}}
     >
       <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,cursor:"pointer",opacity:intestazioneVisible?1:0,transition:"opacity 0.3s",minHeight:"12vw"}}>
-        <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:"7vw",letterSpacing:4,textTransform:"uppercase",textAlign:"center"}}>Black Diamond Transfert</div>
+        <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:"4.5vw",letterSpacing:3,textTransform:"uppercase",textAlign:"center",whiteSpace:"nowrap"}}>Black Diamond Transfert</div>
         <div style={{color:"#c8a96e",fontSize:"5vw"}}>◆</div>
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
