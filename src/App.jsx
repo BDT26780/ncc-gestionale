@@ -832,7 +832,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     >
       <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,cursor:"pointer",opacity:intestazioneVisible?1:0,transition:"opacity 0.3s",minHeight:"12vw"}}>
         <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:"4.5vw",letterSpacing:3,textTransform:"uppercase",textAlign:"center",whiteSpace:"nowrap"}}>Black Diamond Transfert</div>
-        <div style={{color:"#c8a96e",fontSize:"5vw"}}>◆</div>
+        <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"3vw",marginBottom:"3vw"}}>◆</div>
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
       <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"22vw":cartelloPass.length<=14?"17vw":cartelloPass.length<=20?"13vw":cartelloPass.length<=28?"10vw":"8vw",wordBreak:"break-word",maxWidth:"90vw"}}>{cartelloPass.toUpperCase()}</div>
