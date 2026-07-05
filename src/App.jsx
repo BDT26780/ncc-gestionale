@@ -697,6 +697,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   const [pagId,setPagId]=useState(null);
   const [delId,setDelId]=useState(null);
   const [waPreview,setWaPreview]=useState(null);
+  const [cartelloPass,setCartelloPass]=useState(null);
   const MT=["contanti","bonifico","carta","mypos","paypal"];
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
   const upd=(id,patch)=>setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));
@@ -773,6 +774,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"3px 7px",color:"#25d366",cursor:"pointer",fontSize:11,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
                 {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"3px 7px",color:"#86efac",cursor:"pointer",fontSize:11,fontWeight:700}}>WA Pass.</button>}
                 <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"3px 7px",color:"#4285f4",cursor:"pointer",fontSize:11,fontWeight:700}}>GCal</button>
+                {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"3px 7px",color:"#a78bfa",cursor:"pointer",fontSize:11,fontWeight:700}}>🪧 Cartello</button>}
               </div>
             </div>
           </div>
@@ -822,6 +824,14 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     {delId&&<DelModal title="Eliminare questo servizio?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("servizi",delId);setServizi(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={m=>{upd(pagId,{dataPagamento:today(),metodoPagamento:m});setPagId(null);}}/>}
 
+    {cartelloPass&&<div onClick={()=>setCartelloPass(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:24,cursor:"pointer"}}>
+      <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:12,letterSpacing:3,textTransform:"uppercase",opacity:0.8}}>Black Diamond Transfert</div>
+      <div style={{color:"#c8a96e",fontSize:16}}>◆</div>
+      <div style={{width:60,height:1,background:"#c8a96e",opacity:0.6}}></div>
+      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.2,letterSpacing:2,padding:"0 40px",textShadow:"2px 2px 0px #444,4px 4px 0px #222,6px 6px 8px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=12?"52px":cartelloPass.length<=18?"42px":cartelloPass.length<=26?"32px":cartelloPass.length<=36?"24px":"18px"}}>{cartelloPass.toUpperCase()}</div>
+      <div style={{width:60,height:1,background:"#c8a96e",opacity:0.6}}></div>
+      <div style={{color:"#c8a96e",fontSize:11,letterSpacing:2,opacity:0.5,marginTop:20}}>tocca per chiudere</div>
+    </div>}
     {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
       <div style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:8,padding:14,whiteSpace:"pre-wrap",fontSize:14,color:"#c8d3e0",marginBottom:14}}>{waPreview.msg}</div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
