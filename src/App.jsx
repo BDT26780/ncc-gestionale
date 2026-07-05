@@ -824,13 +824,12 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     {delId&&<DelModal title="Eliminare questo servizio?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("servizi",delId);setServizi(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={m=>{upd(pagId,{dataPagamento:today(),metodoPagamento:m});setPagId(null);}}/>}
 
-    {cartelloPass&&<div onClick={()=>setCartelloPass(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:24,cursor:"pointer"}}>
-      <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:12,letterSpacing:3,textTransform:"uppercase",opacity:0.8}}>Black Diamond Transfert</div>
-      <div style={{color:"#c8a96e",fontSize:16}}>◆</div>
-      <div style={{width:60,height:1,background:"#c8a96e",opacity:0.6}}></div>
-      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.2,letterSpacing:2,padding:"0 40px",textShadow:"2px 2px 0px #444,4px 4px 0px #222,6px 6px 8px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=12?"52px":cartelloPass.length<=18?"42px":cartelloPass.length<=26?"32px":cartelloPass.length<=36?"24px":"18px"}}>{cartelloPass.toUpperCase()}</div>
-      <div style={{width:60,height:1,background:"#c8a96e",opacity:0.6}}></div>
-      <div style={{color:"#c8a96e",fontSize:11,letterSpacing:2,opacity:0.5,marginTop:20}}>tocca per chiudere</div>
+    {cartelloPass&&<div onClick={()=>setCartelloPass(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:28,cursor:"pointer",padding:"40px"}}>
+      <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:13,letterSpacing:3,textTransform:"uppercase",opacity:0.9}}>Black Diamond Transfert</div>
+      <div style={{color:"#c8a96e",fontSize:18}}>◆</div>
+      <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
+      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"14vw":cartelloPass.length<=14?"11vw":cartelloPass.length<=20?"8vw":cartelloPass.length<=28?"6vw":"5vw",wordBreak:"break-word",maxWidth:"90vw"}}>{cartelloPass.toUpperCase()}</div>
+      <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
     </div>}
     {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
       <div style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:8,padding:14,whiteSpace:"pre-wrap",fontSize:14,color:"#c8d3e0",marginBottom:14}}>{waPreview.msg}</div>
