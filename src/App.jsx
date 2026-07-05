@@ -829,15 +829,13 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     {cartelloPass&&<div
       style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:28,padding:"40px"}}
       onTouchEnd={e=>{const now=Date.now();if(now-lastTap.current<350){setCartelloPass(null);setIntestazioneVisible(true);}lastTap.current=now;}}
-      onDoubleClick={()=>{setCartelloPass(null);setIntestazioneVisible(true);}}
     >
-
-      <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer",opacity:intestazioneVisible?1:0,transition:"opacity 0.3s",minHeight:"12vw"}}>
-        <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"6vw"}}>◆</div>
-        <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"4vw"}}>◆</div>
+      <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16,cursor:"pointer",opacity:intestazioneVisible?1:0,transition:"opacity 0.3s",minHeight:"12vw"}}>
+        <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:"7vw",letterSpacing:4,textTransform:"uppercase",textAlign:"center"}}>Black Diamond Transfert</div>
+        <div style={{color:"#c8a96e",fontSize:"5vw"}}>◆</div>
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
-      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"22vw":cartelloPass.length<=14?"17vw":cartelloPass.length<=20?"13vw":cartelloPass.length<=28?"10vw":"8vw",wordBreak:"break-word",maxWidth:"90vw",transition:"margin 0.3s",flex:intestazioneVisible?0:1,display:"flex",alignItems:"center",justifyContent:"center"}}>{cartelloPass.toUpperCase()}</div>
+      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"22vw":cartelloPass.length<=14?"17vw":cartelloPass.length<=20?"13vw":cartelloPass.length<=28?"10vw":"8vw",wordBreak:"break-word",maxWidth:"90vw"}}>{cartelloPass.toUpperCase()}</div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
     </div>}
     {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
@@ -1506,7 +1504,6 @@ function Preventivi({refreshTick=0}){
           table { border-collapse: collapse !important; }
           td, th { border: 1px solid #999 !important; padding: 4px 8px !important; }
         }
-        @media (pointer: coarse) { .no-touch-only { display: none !important; } }
       `}</style>
       <div style={{textAlign:"center",borderBottom:"2px solid #111",paddingBottom:14,marginBottom:18}}>
         <div style={{fontSize:15,fontWeight:"bold",letterSpacing:.5,marginBottom:6}}>{AZIENDA.nome}</div>
