@@ -698,6 +698,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   const [delId,setDelId]=useState(null);
   const [waPreview,setWaPreview]=useState(null);
   const [cartelloPass,setCartelloPass]=useState(null);
+  const [intestazioneVisible,setIntestazioneVisible]=useState(true);
   const MT=["contanti","bonifico","carta","mypos","paypal"];
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
   const upd=(id,patch)=>setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));
@@ -824,9 +825,11 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     {delId&&<DelModal title="Eliminare questo servizio?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("servizi",delId);setServizi(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={m=>{upd(pagId,{dataPagamento:today(),metodoPagamento:m});setPagId(null);}}/>}
 
-    {cartelloPass&&<div onClick={()=>setCartelloPass(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:28,cursor:"pointer",padding:"40px"}}>
-      <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:13,letterSpacing:3,textTransform:"uppercase",opacity:0.9}}>Black Diamond Transfert</div>
-      <div style={{color:"#c8a96e",fontSize:18}}>◆</div>
+    {cartelloPass&&<div onDoubleClick={()=>setCartelloPass(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:28,padding:"40px"}}>
+      <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12,cursor:"pointer",opacity:intestazioneVisible?1:0,transition:"opacity 0.3s"}}>
+        <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:"4vw",letterSpacing:4,textTransform:"uppercase"}}>Black Diamond Transfert</div>
+        <div style={{color:"#c8a96e",fontSize:"3vw"}}>◆</div>
+      </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
       <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"22vw":cartelloPass.length<=14?"17vw":cartelloPass.length<=20?"13vw":cartelloPass.length<=28?"10vw":"8vw",wordBreak:"break-word",maxWidth:"90vw"}}>{cartelloPass.toUpperCase()}</div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
