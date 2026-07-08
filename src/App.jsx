@@ -670,7 +670,7 @@ function apriGCal(s,drv,cli){
     "ID: "+s.id,
     s.note?"Note: "+s.note:"",
   ].filter(Boolean).join("\n");
-  window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(titolo)+"&dates="+dtS+"/"+dtE+"&location="+encodeURIComponent(s.pickup||"")+"&details="+encodeURIComponent(det),"_blank");
+const _i=["BEGIN:VCALENDAR","VERSION:2.0","BEGIN:VEVENT","UID:"+s.id+"@bdt.it","DTSTART;TZID=Europe/Rome:"+dtS,"DTEND;TZID=Europe/Rome:"+dtE,"SUMMARY:"+titolo,"LOCATION:"+(s.pickup||""),"END:VEVENT","END:VCALENDAR"].join("\r\n");const _b=new Blob([_i],{type:"text/calendar"});const _u=URL.createObjectURL(_b);const _a=document.createElement("a");_a.href=_u;_a.download="servizio.ics";_a.click();URL.revokeObjectURL(_u);
 }
 
 // ── STATO VOLO/TRENO ──────────────────────────────────────────────────────────
