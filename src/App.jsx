@@ -835,7 +835,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
         <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"4.5vw",marginBottom:"3vw"}}>◆</div>
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
-      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.15,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"22vw":cartelloPass.length<=14?"17vw":cartelloPass.length<=20?"13vw":cartelloPass.length<=28?"10vw":"8vw",wordBreak:"break-word",maxWidth:"90vw"}}>{cartelloPass.toUpperCase()}</div>
+      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.2,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:cartelloPass.length<=8?"min(18vw,120px)":cartelloPass.length<=14?"min(14vw,100px)":cartelloPass.length<=20?"min(11vw,80px)":cartelloPass.length<=28?"min(8vw,60px)":"min(6vw,48px)",wordBreak:"break-word",maxWidth:"90vw",padding:"0 20px"}}>{cartelloPass.toUpperCase()}</div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
     </div>}
     {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
