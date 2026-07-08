@@ -852,7 +852,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
         <F label="Ora" w="50%"><input style={S.inp} type="time" value={form.ora||""} onChange={set("ora")}/></F>
       </div>
       <div style={{display:"flex",gap:10}}>
-        <F label="Committente" w="50%"><select style={S.inp} value={form.committenteId||""} onChange={e=>{const cli=clienti.find(c=>c.id===e.target.value);setForm(p=>({...p,committenteId:e.target.value,telefonoUtente:p.telefonoUtente||cli?.telefono||""}));}}><option value="">—</option>{clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></F>
+        <F label="Committente" w="50%"><select style={S.inp} value={form.committenteId||""} onChange={e=>{const cli=clienti.find(c=>c.id===e.target.value);setForm(p=>({...p,committenteId:e.target.value,telefonoUtente:cli?.telefono||p.telefonoUtente||""}));}}><option value="">—</option>{clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></F>
         <F label="Driver" w="50%"><select style={S.inp} value={form.driverId||""} onChange={set("driverId")}><option value="">—</option>{driver.map(d=><option key={d.id} value={d.id}>{d.nome}{d.targa?" ("+d.targa+")":""}</option>)}</select></F>
       </div>
       <div style={{display:"flex",gap:10}}>
