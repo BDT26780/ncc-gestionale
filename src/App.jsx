@@ -717,7 +717,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       s.nomeUtente?.toLowerCase().includes(q)||
       s.numeroVolo?.toLowerCase().includes(q)||
       clienti.find(c=>c.id===s.committenteId)?.nome?.toLowerCase().includes(q);
-  }).sort((a,b)=>(b.data+(b.ora||""))>(a.data+(a.ora||""))?1:-1);
+  }).sort((a,b)=>(a.data+(a.ora||""))>(b.data+(b.ora||""))?1:-1);
   const nPagati=servizi.filter(s=>s.dataPagamento).length;
 
   return <div>
