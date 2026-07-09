@@ -830,7 +830,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"space-evenly",gap:0,padding:"20px 40px"}}
       onTouchEnd={e=>{const now=Date.now();if(now-lastTap.current<350){setCartelloPass(null);setIntestazioneVisible(true);}lastTap.current=now;}}
     >
-      <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:intestazioneVisible?"flex":"none",flexDirection:"column",alignItems:"center",gap:16,cursor:"pointer"}}>
+      <div onClick={()=>setIntestazioneVisible(p=>!p)} style={{display:intestazioneVisible?"flex":"none",flexDirection:"column",alignItems:"center",gap:16,cursor:"pointer",marginTop:"3vw"}}>
         <div style={{color:"#c8a96e",fontFamily:"Georgia,serif",fontSize:"4.5vw",letterSpacing:3,textTransform:"uppercase",textAlign:"center",whiteSpace:"nowrap"}}>Black Diamond Transfert</div>
         <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"4.5vw",marginBottom:"3vw"}}>◆</div>
       </div>
