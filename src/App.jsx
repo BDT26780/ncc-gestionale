@@ -835,7 +835,21 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
         <div style={{color:"#c8a96e",fontSize:"5vw",marginTop:"4.5vw",marginBottom:"3vw"}}>◆</div>
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
-      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.4,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",fontSize:(()=>{const longest=cartelloPass.split(" ").reduce((a,b)=>b.length>a.length?b:a,"").length;const words=cartelloPass.split(" ").length;const base=words<=2?"min(15vw,15vh,200px)":words<=3?"min(12vw,12vh,160px)":"min(10vw,10vh,130px)";return longest<=4?"min(20vw,20vh,260px)":longest<=6?"min(16vw,16vh,210px)":longest<=8?"min(13vw,13vh,170px)":longest<=10?"min(10vw,10vh,140px)":longest<=12?"min(8vw,8vh,110px)":"min(6vw,6vh,90px)";})(),wordBreak:"keep-all",whiteSpace:"pre-wrap",maxWidth:"90vw",padding:"0 30px",width:"100%"}}>{cartelloPass.toUpperCase().split(" ").join("\n")}</div>
+      <div style={{color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,textAlign:"center",lineHeight:1.4,letterSpacing:3,textShadow:"3px 3px 0px #444,6px 6px 0px #222,8px 8px 12px rgba(0,0,0,0.8)",maxWidth:"90vw",padding:"0 30px",width:"100%"}}>
+        {(()=>{
+          const words=cartelloPass.toUpperCase().split(" ");
+          const prefixes=["SIG.","SIG.RA","SIG.NA","DR.","DOTT.","PROF.","AVV."];
+          const isPrefix=w=>prefixes.some(p=>w===p||w===p.replace(".",""));
+          const prefix=words.length>1&&isPrefix(words[0])?words[0]:null;
+          const nameWords=prefix?words.slice(1):words;
+          const longest=nameWords.reduce((a,b)=>b.length>a.length?b:a,"").length;
+          const fs=longest<=4?"min(22vw,22vh,300px)":longest<=6?"min(18vw,18vh,240px)":longest<=8?"min(14vw,14vh,190px)":longest<=10?"min(11vw,11vh,150px)":longest<=12?"min(9vw,9vh,120px)":"min(7vw,7vh,95px)";
+          return <div>
+            {prefix&&<div style={{fontSize:"min(8vw,8vh,100px)",marginBottom:"1vh",opacity:0.85}}>{prefix}</div>}
+            <div style={{fontSize:fs}}>{nameWords.join("\n")}</div>
+          </div>;
+        })()}
+      </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
     </div>}
     {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
