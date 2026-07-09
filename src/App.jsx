@@ -843,7 +843,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
           const prefix=words.length>1&&isPrefix(words[0])?words[0]:null;
           const nameWords=prefix?words.slice(1):words;
           const longest=nameWords.reduce((a,b)=>b.length>a.length?b:a,"").length;
-          const fs=longest<=4?"min(22vw,22vh,300px)":longest<=6?"min(18vw,18vh,240px)":longest<=8?"min(14vw,14vh,190px)":longest<=10?"min(11vw,11vh,150px)":longest<=12?"min(9vw,9vh,120px)":"min(7vw,7vh,95px)";
+          const fs=longest<=4?"min(30vw,30vh,420px)":longest<=6?"min(24vw,24vh,340px)":longest<=8?"min(19vw,19vh,270px)":longest<=10?"min(15vw,15vh,210px)":longest<=12?"min(12vw,12vh,170px)":"min(9vw,9vh,130px)";
           return <div>
             {prefix&&<div style={{fontSize:"min(8vw,8vh,100px)",marginBottom:"1vh",opacity:0.85}}>{prefix}</div>}
             <div style={{fontSize:fs}}>{nameWords.join("\n")}</div>
