@@ -922,7 +922,7 @@ function Calendario({servizi,setServizi,driver}){
   const PH=60;
   const wkStart=useMemo(()=>{const d=new Date(date);const day=d.getDay();d.setDate(d.getDate()+(day===0?-6:1-day));d.setHours(0,0,0,0);return d;},[date]);
   const days=useMemo(()=>view==="day"?[date]:Array.from({length:7},(_,i)=>{const d=new Date(wkStart);d.setDate(d.getDate()+i);return d;}),[view,date,wkStart]);
-  const ds=d=>d.toISOString().slice(0,10);
+  const ds=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const parseT=t=>{if(!t)return 0;const[h,m]=t.split(":").map(Number);return h+(m||0)/60;};
   const dur=s=>parseFloat(s.durataManuale)||(s.tipo==="disposizione"?parseInt(s.oreDisp)||2:1.5);
   const todayStr=today();
