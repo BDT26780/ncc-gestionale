@@ -712,6 +712,8 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   const [dataFiltro,setDataFiltro]=useState(today());
   const filtered=servizi.filter(s=>{
     if(!filter&&s.data!==dataFiltro)return false;
+    if(!filter)return true;
+    if(!filter&&s.data!==dataFiltro)return false;
     if(s.dataPagamento&&!filter&&!mostraTutti)return false;
     if(!filter)return true;
     const q=filter.toLowerCase();
