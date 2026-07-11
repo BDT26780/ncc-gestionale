@@ -1124,39 +1124,59 @@ function Fatturazione({servizi,setServizi,clienti,driver}){
 function DaPagare({servizi,clienti,driver,setServizi}){
   const [filtroC,setFiltroC]=useState("");
   const [pagId,setPagId]=useState(null);
-  const upd=(id,patch)=>setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));
-  const lista=servizi.filter(s=>!s.dataPagamento&&(!filtroC||s.committenteId===filtroC)).sort((a,b)=>a.data>b.data?1:-1);
-  const tot=lista.reduce((a,s)=>a+prezzoLordo(s),0);
+  const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura"}[k]||k,v]))).eq("id",id);};
+  const cycleFattura=(s)=>{
+    const sf=s.statoFattura||"mancante";
+    if(sf==="mancante")upd(s.id,{statoFattura:"preparata"});
+    else if(sf==="preparata")upd(s.id,{statoFattura:"emessa",dataFattura:today()});
+    else upd(s.id,{statoFattura:"mancante",dataFattura:null});
+  };
+  const lista=servizi.filter(s=>!filtroC||s.committenteId===filtroC);
+  const mesi=[...new Set(lista.map(s=>s.data?.slice(0,7)))].filter(Boolean).sort().reverse();
+  const totDaPagare=lista.filter(s=>!s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
   return <div>
-    <h2 style={{...S.gld,marginTop:0}}>Servizi da pagare</h2>
+    <h2 style={{...S.gld,marginTop:0}}>Da Pagare</h2>
     <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
       <select style={{...S.inp,flex:1,minWidth:180}} value={filtroC} onChange={e=>setFiltroC(e.target.value)}>
         <option value="">Tutti i committenti</option>
         {clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
       </select>
-      <div style={{background:"#dc262633",border:"1px solid #dc2626",borderRadius:8,padding:"5px 12px",color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(tot)}</div>
+      <div style={{background:"#dc262633",border:"1px solid #dc2626",borderRadius:8,padding:"5px 12px",color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totDaPagare)}</div>
     </div>
-    {lista.map(s=>{
-      const drv=driver.find(d=>d.id===s.driverId);
-      const cli=clienti.find(c=>c.id===s.committenteId);
-      return <div key={s.id} style={{...S.card,border:"1px solid #dc262444",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-        <div style={{flex:1}}>
-          <div style={{display:"flex",gap:5,marginBottom:3,flexWrap:"wrap"}}>
-            <span style={{color:"#e8d5a3",fontSize:11,fontFamily:"monospace"}}>{s.id}</span>
-            <Badge color={s.tipo==="trasferimento"?"blue":"amber"}>{s.tipo==="trasferimento"?"Trasf.":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
-            {!s.dataFattura&&<Badge color="amber">Fattura mancante</Badge>}
-          </div>
-          <div style={{color:"#c8d3e0",fontSize:13}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
-          <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome} · {drv?.nome}</div>
-          <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{color:"#4ade80",fontWeight:700,fontFamily:"Georgia,serif",fontSize:16}}>{fmt(prezzoLordo(s))}</span>
-          <button onClick={()=>setPagId(s.id)} style={{background:"#16a34a",border:"none",color:"white",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>Paga</button>
-        </div>
+    {mesi.map(mese=>{
+      const nomeM=new Date(mese+"-15").toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+      const servMese=lista.filter(s=>s.data?.startsWith(mese));
+      const nonPagati=servMese.filter(s=>!s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
+      const pagati=servMese.filter(s=>s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
+      return <div key={mese} style={{marginBottom:20}}>
+        <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:2,marginBottom:8,borderBottom:"1px solid #2d3550",paddingBottom:6}}>{nomeM}</div>
+        {[...nonPagati,...pagati].map(s=>{
+          const drv=driver.find(d=>d.id===s.driverId);
+          const cli=clienti.find(c=>c.id===s.committenteId);
+          const pagato=!!s.dataPagamento;
+          const sf=s.statoFattura||"mancante";
+          const fattColor=sf==="emessa"?"#4ade80":sf==="preparata"?"#fbbf24":"#f87171";
+          const fattLabel=sf==="emessa"?"✅ Fattura emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
+          return <div key={s.id} style={{...S.card,border:pagato?"2px solid #4ade80":"1px solid #dc262444",boxShadow:pagato?"0 0 8px #4ade8066":"none",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",opacity:pagato?0.7:1}}>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",gap:5,marginBottom:3,flexWrap:"wrap",alignItems:"center"}}>
+                <Badge color={s.tipo==="trasferimento"?"blue":"amber"}>{s.tipo==="trasferimento"?"Trasf.":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
+                <button onClick={()=>cycleFattura(s)} style={{background:"none",border:"1px solid "+fattColor+"44",color:fattColor,cursor:"pointer",fontSize:11,padding:"2px 8px",borderRadius:4}}>{fattLabel}</button>
+                {pagato&&<span style={{color:"#4ade80",fontSize:11}}>✓ {s.dataPagamento}</span>}
+              </div>
+              <div style={{color:"#c8d3e0",fontSize:13}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
+              <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome} · {drv?.nome}</div>
+              <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{color:"#4ade80",fontWeight:700,fontFamily:"Georgia,serif",fontSize:16}}>{fmt(prezzoLordo(s))}</span>
+              {!pagato&&<button onClick={()=>setPagId(s.id)} style={{background:"#16a34a",border:"none",color:"white",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>Paga</button>}
+            </div>
+          </div>;
+        })}
       </div>;
     })}
-    {lista.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun servizio da pagare</div>}
+    {mesi.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun servizio</div>}
     {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={m=>{upd(pagId,{dataPagamento:today(),metodoPagamento:m});setPagId(null);}}/>}
   </div>;
 }
