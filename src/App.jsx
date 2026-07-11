@@ -760,7 +760,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 {!s.dataFattura&&<Badge color="amber">Fattura mancante</Badge>}
               </div>
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
-              <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
+              <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome||"—"} · <span style={{color:col}}>{drv?.nome||"—"} {drv?.targa&&"("+drv.targa+")"}</span></div>
               <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
               {(s.passeggeri>1||s.bagagli)&&<div style={{color:"#8892a4",fontSize:11}}>👥 {s.passeggeri||1} pax {s.bagagli?"· 🧳 "+s.bagagli+" bag":""}</div>}
@@ -1078,7 +1078,7 @@ function Fatturazione({servizi,setServizi,clienti,driver}){
               const drv=driver.find(d=>d.id===s.driverId);
               return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid #1e2435"}}>
                 <div>
-                  <div style={{color:"#c8d3e0",fontSize:12}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
+                  <div style={{color:"#c8d3e0",fontSize:12}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
                   <div style={{color:"#8892a4",fontSize:11}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -1104,7 +1104,7 @@ function Fatturazione({servizi,setServizi,clienti,driver}){
         const col=dcol(s.driverId,driver);
         return <div key={s.id} style={{...S.card,borderLeft:`4px solid ${col}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
           <div style={{flex:1}}>
-            <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
+            <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
             <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome||"—"} · <span style={{color:col}}>{drv?.nome||"—"}</span></div>
             <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
           </div>
@@ -1160,7 +1160,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
                 {!noFatt&&<button onClick={()=>cycleFattura(s)} style={{background:"none",border:"1px solid "+fattColor+"44",color:fattColor,cursor:"pointer",fontSize:11,padding:"2px 8px",borderRadius:4}}>{fattLabel}</button>}
                 {pagato&&<span style={{color:"#4ade80",fontSize:11}}>✓ {s.dataPagamento}</span>}
               </div>
-              <div style={{color:"#c8d3e0",fontSize:13}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
+              <div style={{color:"#c8d3e0",fontSize:13}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome} · {drv?.nome}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
             </div>
@@ -1271,7 +1271,7 @@ function Spese({spese,setSpese,driver,anno}){
             return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 13px",borderBottom:"1px solid #1e2435"}}>
               <div>
                 <div style={{color:"#c8d3e0",fontSize:12}}>{s.descrizione||cat.l}{s.isQuota&&<span style={{color:"#8892a4",fontSize:11}}> (quota {s.quotaNum}/{s.quotaTot})</span>}</div>
-                <div style={{color:"#8892a4",fontSize:11}}>{s.data}{drv&&" · "+drv.nome}{s.aliqIva&&s.aliqIva!=="0"&&" · IVA "+s.aliqIva+"%"}{s.note&&" · "+s.note}</div>
+                <div style={{color:"#8892a4",fontSize:11}}>{fmtData(s.data)}{drv&&" · "+drv.nome}{s.aliqIva&&s.aliqIva!=="0"&&" · IVA "+s.aliqIva+"%"}{s.note&&" · "+s.note}</div>
                 {ivaC>0&&<div style={{color:"#4ade80",fontSize:10}}>IVA a credito: {fmt(ivaC)}</div>}
               </div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
