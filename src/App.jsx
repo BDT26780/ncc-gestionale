@@ -773,24 +773,24 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 <div style={{fontSize:10,color:"#8892a4"}}>imp. {fmt(s.ivaSeparata?parseFloat(s.prezzo)||0:(parseFloat(s.prezzo)||0)/1.1)} + IVA {fmt(ivaS(s))}</div>
               </div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                <button onClick={()=>upd(s.id,{dataFattura:s.dataFattura?null:today()})} style={{background:s.dataFattura?"#16a34a22":"#2d3550",border:"1px solid "+(s.dataFattura?"#16a34a":"#3d4a60"),borderRadius:4,padding:"3px 7px",color:s.dataFattura?"#4ade80":"#8892a4",cursor:"pointer",fontSize:11}}>
+                <button onClick={()=>upd(s.id,{dataFattura:s.dataFattura?null:today()})} style={{background:s.dataFattura?"#16a34a22":"#2d3550",border:"1px solid "+(s.dataFattura?"#16a34a":"#3d4a60"),borderRadius:4,padding:"5px 10px",color:s.dataFattura?"#4ade80":"#8892a4",cursor:"pointer",fontSize:13}}>
                   {s.dataFattura?"📄 "+s.dataFattura+"  ✕":"📄 Fattura"}
                 </button>
                 {!s.dataPagamento
-                  ?<button onClick={()=>setPagId(s.id)} style={{background:"#2d3550",border:"1px solid #3d4a60",borderRadius:4,padding:"3px 7px",color:"#8892a4",cursor:"pointer",fontSize:11}}>💳 Paga</button>
-                  :<button onClick={()=>upd(s.id,{dataPagamento:null,metodoPagamento:null})} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"3px 7px",color:"#4ade80",cursor:"pointer",fontSize:11}}>✓ {s.metodoPagamento} ✕</button>
+                  ?<button onClick={()=>setPagId(s.id)} style={{background:"#2d3550",border:"1px solid #3d4a60",borderRadius:4,padding:"5px 10px",color:"#8892a4",cursor:"pointer",fontSize:13}}>💳 Paga</button>
+                  :<button onClick={()=>upd(s.id,{dataPagamento:null,metodoPagamento:null})} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"5px 10px",color:"#4ade80",cursor:"pointer",fontSize:13}}>✓ {s.metodoPagamento} ✕</button>
                 }
-                <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"3px 7px"}}><Ic n="edt" z={12}/></button>
-                <button onClick={()=>setDelId(s.id)} style={{...S.bR,padding:"3px 7px"}}><Ic n="trs" z={12}/></button>
-                <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"3px 7px",color:"#25d366",cursor:"pointer",fontSize:11,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
-                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"3px 7px",color:"#86efac",cursor:"pointer",fontSize:11,fontWeight:700}}>WA Pass.</button>}
-                <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"3px 7px",color:"#4285f4",cursor:"pointer",fontSize:11,fontWeight:700}}>GCal</button>
-                {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"3px 7px",color:"#a78bfa",cursor:"pointer",fontSize:11,fontWeight:700}}>🪧 Cartello</button>}
+                <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"5px 10px"}}><Ic n="edt" z={12}/></button>
+                <button onClick={()=>setDelId(s.id)} style={{...S.bR,padding:"5px 10px"}}><Ic n="trs" z={12}/></button>
+                <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"5px 10px",color:"#25d366",cursor:"pointer",fontSize:13,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
+                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"5px 10px",color:"#86efac",cursor:"pointer",fontSize:13,fontWeight:700}}>WA Pass.</button>}
+                <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"5px 10px",color:"#4285f4",cursor:"pointer",fontSize:13,fontWeight:700}}>GCal</button>
+                {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"5px 10px",color:"#a78bfa",cursor:"pointer",fontSize:13,fontWeight:700}}>🪧 Cartello</button>}
               </div>
             </div>
           </div>
         </div>:<div>
-          <div style={{color:"#e8d5a3",fontSize:11,marginBottom:8,fontFamily:"monospace"}}>Modifica rapida — {s.id}</div>
+          <div style={{color:"#e8d5a3",fontSize:13,marginBottom:8,fontFamily:"monospace"}}>Modifica rapida — {s.id}</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {[["Utente","nomeUtente","text"],["Pick-up","pickup","text"],["Drop-off","dropoff","text"],["Volo/Treno","numeroVolo","text"],["Tel. Passeggero","telefonoUtente","text"],["Prezzo","prezzo","number"],["Compenso driver","prezzoDriver","number"]].map(([l,f,t])=>(
               <div key={f} style={{flex:"1 1 130px"}}>
