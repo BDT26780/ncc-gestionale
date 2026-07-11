@@ -757,7 +757,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 {s.numeroVolo&&<Badge color="gray">{s.numeroVolo}</Badge>}
                 {s.dataPagamento&&<Badge color="green">Pagato</Badge>}
                 {s.inFattura&&!s.dataPagamento&&<Badge color="teal">In fattura</Badge>}
-                {!s.dataFattura&&<Badge color="amber">Fattura mancante</Badge>}
+                {!s.dataFattura&&!["contanti","paypal","mypos"].includes(s.metodoPagamento)&&<Badge color="amber">Fattura mancante</Badge>}
               </div>
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
               <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
@@ -1126,7 +1126,8 @@ function DaPagare({servizi,clienti,driver,setServizi}){
   const [pagId,setPagId]=useState(null);
   const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura"}[k]||k,v]))).eq("id",id);};
   const cycleFattura=(s)=>{
-    const sf=s.statoFattura||"mancante";
+          const noFatt=["contanti","paypal","mypos"].includes(s.metodoPagamento);
+          const sf=s.statoFattura||"mancante";
     if(sf==="mancante")upd(s.id,{statoFattura:"preparata"});
     else if(sf==="preparata")upd(s.id,{statoFattura:"emessa",dataFattura:today()});
     else upd(s.id,{statoFattura:"mancante",dataFattura:null});
@@ -1161,7 +1162,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
             <div style={{flex:1}}>
               <div style={{display:"flex",gap:5,marginBottom:3,flexWrap:"wrap",alignItems:"center"}}>
                 <Badge color={s.tipo==="trasferimento"?"blue":"amber"}>{s.tipo==="trasferimento"?"Trasf.":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
-                <button onClick={()=>cycleFattura(s)} style={{background:"none",border:"1px solid "+fattColor+"44",color:fattColor,cursor:"pointer",fontSize:11,padding:"2px 8px",borderRadius:4}}>{fattLabel}</button>
+                {!noFatt&&<button onClick={()=>cycleFattura(s)} style={{background:"none",border:"1px solid "+fattColor+"44",color:fattColor,cursor:"pointer",fontSize:11,padding:"2px 8px",borderRadius:4}}>{fattLabel}</button>}
                 {pagato&&<span style={{color:"#4ade80",fontSize:11}}>✓ {s.dataPagamento}</span>}
               </div>
               <div style={{color:"#c8d3e0",fontSize:13}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
