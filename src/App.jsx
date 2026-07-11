@@ -1125,7 +1125,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
   const [filtroC,setFiltroC]=useState("");
   const [pagId,setPagId]=useState(null);
   const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura"}[k]||k,v]))).eq("id",id);};
-  const cycleFattura=(s)=>{const sf=s.statoFattura||"mancante";if(sf==="mancante")upd(s.id,{statoFattura:"preparata"});else if(sf==="preparata")upd(s.id,{statoFattura:"emessa",dataFattura:today()});else upd(s.id,{statoFattura:"mancante",dataFattura:null});};
+  const cycleFattura=async(s)=>{const sf=s.statoFattura||"mancante";let patch;if(sf==="mancante")patch={statoFattura:"preparata"};else if(sf==="preparata")patch={statoFattura:"emessa",dataFattura:today()};else patch={statoFattura:"mancante",dataFattura:null};setServizi(p=>p.map(x=>x.id===s.id?{...x,...patch}:x));await supa.from("servizi").update({stato_fattura:patch.statoFattura,data_fattura:patch.dataFattura||null}).eq("id",s.id);};
   const lista=servizi.filter(s=>!filtroC||s.committenteId===filtroC);
   const mesi=[...new Set(lista.map(s=>s.data?.slice(0,7)))].filter(Boolean).sort().reverse();
   const tot=lista.filter(s=>!s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
