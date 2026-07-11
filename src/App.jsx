@@ -757,7 +757,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 {s.numeroVolo&&<Badge color="gray">{s.numeroVolo}</Badge>}
                 {s.dataPagamento&&<Badge color="green">Pagato</Badge>}
                 {s.inFattura&&!s.dataPagamento&&<Badge color="teal">In fattura</Badge>}
-                {!s.dataFattura&&!["contanti","paypal","mypos"].includes(s.metodoPagamento)&&<Badge color="amber">Fattura mancante</Badge>}
+                {!s.dataFattura&&<Badge color="amber">Fattura mancante</Badge>}
               </div>
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
               <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
@@ -1125,16 +1125,10 @@ function DaPagare({servizi,clienti,driver,setServizi}){
   const [filtroC,setFiltroC]=useState("");
   const [pagId,setPagId]=useState(null);
   const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura"}[k]||k,v]))).eq("id",id);};
-  const cycleFattura=(s)=>{
-          const noFatt=["contanti","paypal","mypos"].includes(s.metodoPagamento);
-          const sf=s.statoFattura||"mancante";
-    if(sf==="mancante")upd(s.id,{statoFattura:"preparata"});
-    else if(sf==="preparata")upd(s.id,{statoFattura:"emessa",dataFattura:today()});
-    else upd(s.id,{statoFattura:"mancante",dataFattura:null});
-  };
+  const cycleFattura=(s)=>{const sf=s.statoFattura||"mancante";if(sf==="mancante")upd(s.id,{statoFattura:"preparata"});else if(sf==="preparata")upd(s.id,{statoFattura:"emessa",dataFattura:today()});else upd(s.id,{statoFattura:"mancante",dataFattura:null});};
   const lista=servizi.filter(s=>!filtroC||s.committenteId===filtroC);
   const mesi=[...new Set(lista.map(s=>s.data?.slice(0,7)))].filter(Boolean).sort().reverse();
-  const totDaPagare=lista.filter(s=>!s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
+  const tot=lista.filter(s=>!s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
   return <div>
     <h2 style={{...S.gld,marginTop:0}}>Da Pagare</h2>
     <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
@@ -1142,7 +1136,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
         <option value="">Tutti i committenti</option>
         {clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
       </select>
-      <div style={{background:"#dc262633",border:"1px solid #dc2626",borderRadius:8,padding:"5px 12px",color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totDaPagare)}</div>
+      <div style={{background:"#dc262633",border:"1px solid #dc2626",borderRadius:8,padding:"5px 12px",color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(tot)}</div>
     </div>
     {mesi.map(mese=>{
       const nomeM=new Date(mese+"-15").toLocaleDateString("it-IT",{month:"long",year:"numeric"});
@@ -1155,6 +1149,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
           const drv=driver.find(d=>d.id===s.driverId);
           const cli=clienti.find(c=>c.id===s.committenteId);
           const pagato=!!s.dataPagamento;
+          const noFatt=["contanti","paypal","mypos"].includes(s.metodoPagamento);
           const sf=s.statoFattura||"mancante";
           const fattColor=sf==="emessa"?"#4ade80":sf==="preparata"?"#fbbf24":"#f87171";
           const fattLabel=sf==="emessa"?"✅ Fattura emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
