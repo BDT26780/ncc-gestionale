@@ -1048,13 +1048,13 @@ function Fatturazione({servizi,setServizi,clienti,driver}){
     setPagModal(null);
   };
   const toggle=id=>setServizi(p=>p.map(s=>s.id===id?{...s,inFattura:!s.inFattura}:s));
-  const daFatt=servizi.filter(s=>s.inFattura&&!s.dataPagamento);
+  const daFatt=servizi.filter(s=>s.inFattura&&!s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
   const perCli=clienti.map(cl=>{
     const ss=daFatt.filter(s=>s.committenteId===cl.id);
     if(!ss.length)return null;
     return{cli:cl,ss,tot:ss.reduce((a,s)=>a+prezzoLordo(s),0)};
   }).filter(Boolean);
-  const disponibili=servizi.filter(s=>!s.inFattura&&!s.dataPagamento&&(!filtroC||s.committenteId===filtroC)).sort((a,b)=>b.data>a.data?1:-1);
+  const disponibili=servizi.filter(s=>!s.inFattura&&!s.dataPagamento&&(!filtroC||s.committenteId===filtroC)).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
 
   return <div>
     <h2 style={{...S.gld,marginTop:0}}>Fatturazione</h2>
