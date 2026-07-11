@@ -760,7 +760,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 {!s.dataFattura&&<Badge color="amber">Fattura mancante</Badge>}
               </div>
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
-              <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
+              <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome||"—"} · <span style={{color:col}}>{drv?.nome||"—"} {drv?.targa&&"("+drv.targa+")"}</span></div>
               <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
               {(s.passeggeri>1||s.bagagli)&&<div style={{color:"#8892a4",fontSize:11}}>👥 {s.passeggeri||1} pax {s.bagagli?"· 🧳 "+s.bagagli+" bag":""}</div>}
@@ -773,24 +773,24 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 <div style={{fontSize:10,color:"#8892a4"}}>imp. {fmt(s.ivaSeparata?parseFloat(s.prezzo)||0:(parseFloat(s.prezzo)||0)/1.1)} + IVA {fmt(ivaS(s))}</div>
               </div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                <button onClick={()=>upd(s.id,{dataFattura:s.dataFattura?null:today()})} style={{background:s.dataFattura?"#16a34a22":"#2d3550",border:"1px solid "+(s.dataFattura?"#16a34a":"#3d4a60"),borderRadius:4,padding:"5px 10px",color:s.dataFattura?"#4ade80":"#8892a4",cursor:"pointer",fontSize:13}}>
+                <button onClick={()=>upd(s.id,{dataFattura:s.dataFattura?null:today()})} style={{background:s.dataFattura?"#16a34a22":"#2d3550",border:"1px solid "+(s.dataFattura?"#16a34a":"#3d4a60"),borderRadius:4,padding:"3px 7px",color:s.dataFattura?"#4ade80":"#8892a4",cursor:"pointer",fontSize:11}}>
                   {s.dataFattura?"📄 "+s.dataFattura+"  ✕":"📄 Fattura"}
                 </button>
                 {!s.dataPagamento
-                  ?<button onClick={()=>setPagId(s.id)} style={{background:"#2d3550",border:"1px solid #3d4a60",borderRadius:4,padding:"5px 10px",color:"#8892a4",cursor:"pointer",fontSize:13}}>💳 Paga</button>
-                  :<button onClick={()=>upd(s.id,{dataPagamento:null,metodoPagamento:null})} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"5px 10px",color:"#4ade80",cursor:"pointer",fontSize:13}}>✓ {s.metodoPagamento} ✕</button>
+                  ?<button onClick={()=>setPagId(s.id)} style={{background:"#2d3550",border:"1px solid #3d4a60",borderRadius:4,padding:"3px 7px",color:"#8892a4",cursor:"pointer",fontSize:11}}>💳 Paga</button>
+                  :<button onClick={()=>upd(s.id,{dataPagamento:null,metodoPagamento:null})} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"3px 7px",color:"#4ade80",cursor:"pointer",fontSize:11}}>✓ {s.metodoPagamento} ✕</button>
                 }
-                <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"5px 10px"}}><Ic n="edt" z={12}/></button>
-                <button onClick={()=>setDelId(s.id)} style={{...S.bR,padding:"5px 10px"}}><Ic n="trs" z={12}/></button>
-                <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"5px 10px",color:"#25d366",cursor:"pointer",fontSize:13,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
-                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"5px 10px",color:"#86efac",cursor:"pointer",fontSize:13,fontWeight:700}}>WA Pass.</button>}
-                <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"5px 10px",color:"#4285f4",cursor:"pointer",fontSize:13,fontWeight:700}}>GCal</button>
-                {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"5px 10px",color:"#a78bfa",cursor:"pointer",fontSize:13,fontWeight:700}}>🪧 Cartello</button>}
+                <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"3px 7px"}}><Ic n="edt" z={12}/></button>
+                <button onClick={()=>setDelId(s.id)} style={{...S.bR,padding:"3px 7px"}}><Ic n="trs" z={12}/></button>
+                <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"3px 7px",color:"#25d366",cursor:"pointer",fontSize:11,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
+                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"3px 7px",color:"#86efac",cursor:"pointer",fontSize:11,fontWeight:700}}>WA Pass.</button>}
+                <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"3px 7px",color:"#4285f4",cursor:"pointer",fontSize:11,fontWeight:700}}>GCal</button>
+                {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"3px 7px",color:"#a78bfa",cursor:"pointer",fontSize:11,fontWeight:700}}>🪧 Cartello</button>}
               </div>
             </div>
           </div>
         </div>:<div>
-          <div style={{color:"#e8d5a3",fontSize:13,marginBottom:8,fontFamily:"monospace"}}>Modifica rapida — {s.id}</div>
+          <div style={{color:"#e8d5a3",fontSize:11,marginBottom:8,fontFamily:"monospace"}}>Modifica rapida — {s.id}</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {[["Utente","nomeUtente","text"],["Pick-up","pickup","text"],["Drop-off","dropoff","text"],["Volo/Treno","numeroVolo","text"],["Tel. Passeggero","telefonoUtente","text"],["Prezzo","prezzo","number"],["Compenso driver","prezzoDriver","number"]].map(([l,f,t])=>(
               <div key={f} style={{flex:"1 1 130px"}}>
@@ -1048,13 +1048,13 @@ function Fatturazione({servizi,setServizi,clienti,driver}){
     setPagModal(null);
   };
   const toggle=id=>setServizi(p=>p.map(s=>s.id===id?{...s,inFattura:!s.inFattura}:s));
-  const daFatt=servizi.filter(s=>s.inFattura&&!s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
+  const daFatt=servizi.filter(s=>s.inFattura&&!s.dataPagamento);
   const perCli=clienti.map(cl=>{
     const ss=daFatt.filter(s=>s.committenteId===cl.id);
     if(!ss.length)return null;
     return{cli:cl,ss,tot:ss.reduce((a,s)=>a+prezzoLordo(s),0)};
   }).filter(Boolean);
-  const disponibili=servizi.filter(s=>!s.inFattura&&!s.dataPagamento&&(!filtroC||s.committenteId===filtroC)).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
+  const disponibili=servizi.filter(s=>!s.inFattura&&!s.dataPagamento&&(!filtroC||s.committenteId===filtroC)).sort((a,b)=>b.data>a.data?1:-1);
 
   return <div>
     <h2 style={{...S.gld,marginTop:0}}>Fatturazione</h2>
@@ -1078,7 +1078,7 @@ function Fatturazione({servizi,setServizi,clienti,driver}){
               const drv=driver.find(d=>d.id===s.driverId);
               return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid #1e2435"}}>
                 <div>
-                  <div style={{color:"#c8d3e0",fontSize:12}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
+                  <div style={{color:"#c8d3e0",fontSize:12}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
                   <div style={{color:"#8892a4",fontSize:11}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -1104,7 +1104,7 @@ function Fatturazione({servizi,setServizi,clienti,driver}){
         const col=dcol(s.driverId,driver);
         return <div key={s.id} style={{...S.card,borderLeft:`4px solid ${col}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
           <div style={{flex:1}}>
-            <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
+            <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
             <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome||"—"} · <span style={{color:col}}>{drv?.nome||"—"}</span></div>
             <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
           </div>
@@ -1160,7 +1160,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
                 {!noFatt&&<button onClick={()=>cycleFattura(s)} style={{background:"none",border:"1px solid "+fattColor+"44",color:fattColor,cursor:"pointer",fontSize:11,padding:"2px 8px",borderRadius:4}}>{fattLabel}</button>}
                 {pagato&&<span style={{color:"#4ade80",fontSize:11}}>✓ {s.dataPagamento}</span>}
               </div>
-              <div style={{color:"#c8d3e0",fontSize:13}}>{fmtData(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
+              <div style={{color:"#c8d3e0",fontSize:13}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome} · {drv?.nome}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
             </div>
@@ -1271,7 +1271,7 @@ function Spese({spese,setSpese,driver,anno}){
             return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 13px",borderBottom:"1px solid #1e2435"}}>
               <div>
                 <div style={{color:"#c8d3e0",fontSize:12}}>{s.descrizione||cat.l}{s.isQuota&&<span style={{color:"#8892a4",fontSize:11}}> (quota {s.quotaNum}/{s.quotaTot})</span>}</div>
-                <div style={{color:"#8892a4",fontSize:11}}>{fmtData(s.data)}{drv&&" · "+drv.nome}{s.aliqIva&&s.aliqIva!=="0"&&" · IVA "+s.aliqIva+"%"}{s.note&&" · "+s.note}</div>
+                <div style={{color:"#8892a4",fontSize:11}}>{s.data}{drv&&" · "+drv.nome}{s.aliqIva&&s.aliqIva!=="0"&&" · IVA "+s.aliqIva+"%"}{s.note&&" · "+s.note}</div>
                 {ivaC>0&&<div style={{color:"#4ade80",fontSize:10}}>IVA a credito: {fmt(ivaC)}</div>}
               </div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
