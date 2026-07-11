@@ -41,7 +41,7 @@ const loadAll=async()=>{
       prezzo:r.prezzo||"",prezzoDriver:r.prezzo_driver||"",
       ivaSeparata:r.iva_separata||false,metodoPagamento:r.metodo_pagamento||"",
       dataPagamento:r.data_pagamento||"",dataFattura:r.data_fattura||"",
-      inFattura:r.in_fattura||false,durataManuale:r.durata_manuale||null,
+      inFattura:r.in_fattura||false,durataManuale:r.durata_manuale||null,statoFattura:r.stato_fattura||"mancante",
       note:r.note||"",
     }));
     const spese=(rsp.data||[]).map(r=>({
