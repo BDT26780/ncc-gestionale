@@ -1153,7 +1153,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
           const sf=s.statoFattura||"mancante";
           const fattColor=sf==="emessa"?"#4ade80":sf==="preparata"?"#fbbf24":"#f87171";
           const fattLabel=sf==="emessa"?"✅ Fattura emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
-          return <div key={s.id} style={{...S.card,border:pagato?"2px solid #4ade80":"1px solid #dc262444",boxShadow:pagato?"0 0 8px #4ade8066":"none",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",opacity:pagato?0.7:1}}>
+          return <div key={s.id} style={{...S.card,border:pagato?"2px solid #4ade80":"1px solid #dc262444",boxShadow:pagato?"0 0 8px #4ade8066":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",opacity:pagato?0.7:1}}>
             <div style={{flex:1}}>
               <div style={{display:"flex",gap:5,marginBottom:3,flexWrap:"wrap",alignItems:"center"}}>
                 <Badge color={s.tipo==="trasferimento"?"blue":"amber"}>{s.tipo==="trasferimento"?"Trasf.":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
