@@ -873,6 +873,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       <div style={{display:"flex",gap:10}}>
         <F label="Data" w="50%"><input style={S.inp} type="date" value={form.data||""} onChange={set("data")}/></F>
         <F label="Ora" w="50%"><input style={S.inp} type="time" value={form.ora||""} onChange={set("ora")}/></F>
+      <F label="Durata (ore)"><input style={S.inp} type="number" step="0.5" min="0.5" max="24" defaultValue={form.durataManuale||1.5} key={"dur-"+form.id} onBlur={e=>setForm(p=>({...p,durataManuale:parseFloat(e.target.value)||1.5}))}/></F>
       </div>
       <div style={{display:"flex",gap:10}}>
         <F label="Committente" w="50%"><select style={S.inp} value={form.committenteId||""} onChange={e=>{const cli=clienti.find(c=>c.id===e.target.value);setForm(p=>({...p,committenteId:e.target.value,telefonoUtente:cli?.telefono||p.telefonoUtente||""}));}}><option value="">—</option>{clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></F>
