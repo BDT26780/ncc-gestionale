@@ -746,7 +746,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       const drv=driver.find(d=>d.id===s.driverId);
       const cli=clienti.find(c=>c.id===s.committenteId);
       const col=dcol(s.driverId,driver);
-      return <div key={s.id} style={{...S.card,borderLeft:`4px solid ${col}`,background:s.dataPagamento?"#0d1a0d":"#1a1f2e"}}>
+      return <div key={s.id} style={{...S.card,border:s.dataPagamento?"2px solid #4ade80":`1px solid #2d3550`,boxShadow:s.dataPagamento?"0 0 8px #4ade8066":undefined,background:s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
         {inline!==s.id?<div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
             <div style={{flex:1,minWidth:170}}>
@@ -757,7 +757,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 {s.numeroVolo&&<Badge color="gray">{s.numeroVolo}</Badge>}
                 {s.dataPagamento&&<Badge color="green">Pagato</Badge>}
                 {s.inFattura&&!s.dataPagamento&&<Badge color="teal">In fattura</Badge>}
-                {!s.dataFattura&&<Badge color="amber">Fattura mancante</Badge>}
+                {!s.dataFattura&&!["contanti","paypal","mypos"].includes(s.metodoPagamento)&&<Badge color="amber">Fattura mancante</Badge>}
               </div>
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
               <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
