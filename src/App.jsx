@@ -888,7 +888,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       </div>
       <F label="Tel. WhatsApp Passeggero (+39...)"><input style={S.inp} value={form.telefonoUtente||""} onChange={set("telefonoUtente")} placeholder="+393331234567"/></F>
       <div style={{display:"flex",gap:10}}>
-        <F label="N° Passeggeri" w="50%"><input style={S.inp} type="number" min="1" value={form.passeggeri||1} onChange={e=>setForm(p=>({...p,passeggeri:parseInt(e.target.value)||1}))}/></F>
+        <F label="N° Passeggeri" w="50%"><input style={S.inp} type="number" min="1" defaultValue={form.passeggeri||1} key={"pax-"+form.id} onBlur={e=>setForm(p=>({...p,passeggeri:parseInt(e.target.value)||1}))}/></F>
         <F label="N° Bagagli" w="50%"><input style={S.inp} type="number" min="0" value={form.bagagli===undefined||form.bagagli===null?"":form.bagagli} onChange={e=>{const v=e.target.value;setForm(p=>({...p,bagagli:v===""?"":parseInt(v)}))}}/></F>
       </div>
       <F label="Pick-up"><input style={S.inp} value={form.pickup||""} onChange={set("pickup")}/></F>
