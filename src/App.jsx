@@ -610,6 +610,20 @@ function Driver({driver,setDriver}){
         <F label="Scad. Assicurazione" w="50%"><input style={S.inp} type="date" value={form.scadAss||""} onChange={set("scadAss")}/></F>
         <F label="Scad. Revisione" w="50%"><input style={S.inp} type="date" value={form.scadRev||""} onChange={set("scadRev")}/></F>
       </div>
+      <div style={{marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:1}}>ZTL Autorizzazioni</div>
+          <button onClick={()=>setForm(p=>({...p,ztl:[...(p.ztl||[]),{comune:"",scadenza:""}]}))} style={{...S.bG,padding:"3px 10px",fontSize:11}}>+ Aggiungi</button>
+        </div>
+        {(form.ztl||[]).map((z,idx)=>(
+          <div key={idx} style={{display:"flex",gap:8,marginBottom:6,alignItems:"center"}}>
+            <input style={{...S.inp,flex:2}} placeholder="Comune / ZTL" value={z.comune||""} onChange={e=>setForm(p=>({...p,ztl:p.ztl.map((x,j)=>j===idx?{...x,comune:e.target.value}:x)}))}/>
+            <input style={{...S.inp,flex:1}} type="date" value={z.scadenza||""} onChange={e=>setForm(p=>({...p,ztl:p.ztl.map((x,j)=>j===idx?{...x,scadenza:e.target.value}:x)}))} title="Lascia vuoto se permanente"/>
+            <span style={{fontSize:10,color:"#8892a4",whiteSpace:"nowrap"}}>{!z.scadenza?"Perm.":""}</span>
+            <button onClick={()=>setForm(p=>({...p,ztl:p.ztl.filter((_,j)=>j!==idx)}))} style={{...S.bR,padding:"3px 8px",fontSize:12}}>✕</button>
+          </div>
+        ))}
+      </div>
       <F label="Note"><textarea style={{...S.inp,minHeight:48,resize:"vertical"}} value={form.note||""} onChange={set("note")}/></F>
       <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:8}}>
         <button style={S.bGr} onClick={()=>setModal(null)}>Annulla</button>
