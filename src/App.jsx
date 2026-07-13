@@ -1898,7 +1898,7 @@ export default function App(){
     {id:"spese",l:"Spese",i:"eur"},
     {id:"preventivi",l:"Preventivi",i:"fatt"},
     {id:"clienti",l:"Committenti",i:"users"},
-    {id:"driver",l:"Driver",i:"car"},
+    {id:"driver",l:"Driver",i:"car",badge:alerts.length},
   ];
 
   if(!loaded)return <div style={{...S.pg,display:"flex",alignItems:"center",justifyContent:"center",color:"#8892a4",fontFamily:"Georgia,serif"}}>Caricamento...</div>;
