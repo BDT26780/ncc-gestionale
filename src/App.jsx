@@ -532,9 +532,10 @@ function Driver({driver,setDriver}){
   const [form,setForm]=useState({});
   const [delId,setDelId]=useState(null);
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
-  const salva=()=>{
+  const salva=async()=>{
     if(!form.nome)return alert("Inserire il nome");
     setDriver(p=>{const ex=p.find(d=>d.id===form.id);return ex?p.map(d=>d.id===form.id?form:d):[...p,form]});
+    await supa.from("driver").update({ztl:form.ztl||[]}).eq("id",form.id);
     setModal(null);
   };
   const ScT=({label,data})=>{
