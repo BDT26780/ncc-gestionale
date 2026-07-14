@@ -1799,6 +1799,71 @@ function Preventivi({refreshTick=0}){
 
 
 // ── APP ───────────────────────────────────────────────────────────────────────
+// ── REPORT ───────────────────────────────────────────────────────────────────
+function Report({servizi,spese,clienti,driver,anno}){
+  const [filtroC,setFiltroC]=useState("");
+  const [filtroD,setFiltroD]=useState("");
+  const MESI=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+  const srv=servizi.filter(s=>(!filtroC||s.committenteId===filtroC)&&(!filtroD||s.driverId===filtroD));
+  const sp=spese.filter(s=>(!filtroD||s.driverId===filtroD));
+  const mesiDati=MESI.map((nome,mi)=>{
+    const mm=String(mi+1).padStart(2,"0");
+    const srvM=srv.filter(s=>s.data?.slice(5,7)===mm);
+    const spM=sp.filter(s=>s.data?.slice(5,7)===mm);
+    const entrate=srvM.filter(s=>s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
+    const spese_tot=spM.reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
+    const contanti=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="contanti").reduce((a,s)=>a+prezzoLordo(s),0);
+    const bonifico=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="bonifico").reduce((a,s)=>a+prezzoLordo(s),0);
+    const carta=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="carta").reduce((a,s)=>a+prezzoLordo(s),0);
+    const altro=srvM.filter(s=>s.dataPagamento&&!["contanti","bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+prezzoLordo(s),0);
+    const nServ=srvM.filter(s=>s.dataPagamento).length;
+    return{nome,mm,entrate,spese_tot,contanti,bonifico,carta,altro,nServ};
+  }).filter(m=>m.entrate>0||m.spese_tot>0);
+  const totEntrate=mesiDati.reduce((a,m)=>a+m.entrate,0);
+  const totSpese=mesiDati.reduce((a,m)=>a+m.spese_tot,0);
+  return <div>
+    <h2 style={{...S.gld,marginTop:0}}>Report {anno!=="tutti"?anno:""}</h2>
+    <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+      <select style={{...S.inp,flex:1,minWidth:160}} value={filtroC} onChange={e=>setFiltroC(e.target.value)}>
+        <option value="">Tutti i committenti</option>
+        {clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
+      </select>
+      <select style={{...S.inp,flex:1,minWidth:160}} value={filtroD} onChange={e=>setFiltroD(e.target.value)}>
+        <option value="">Tutti i driver</option>
+        {driver.map(d=><option key={d.id} value={d.id}>{d.nome}</option>)}
+      </select>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12,marginBottom:16}}>
+      <div style={{...S.card,border:"1px solid #4ade8044",textAlign:"center"}}>
+        <div style={{color:"#4ade80",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>Totale Entrate</div>
+        <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:26,fontWeight:700}}>{fmt(totEntrate)}</div>
+      </div>
+      <div style={{...S.card,border:"1px solid #f8717144",textAlign:"center"}}>
+        <div style={{color:"#f87171",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>Totale Spese</div>
+        <div style={{color:"#f87171",fontFamily:"Georgia,serif",fontSize:26,fontWeight:700}}>{fmt(totSpese)}</div>
+      </div>
+      <div style={{...S.card,border:"1px solid #e8d5a344",textAlign:"center"}}>
+        <div style={{color:"#e8d5a3",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>Utile Lordo</div>
+        <div style={{color:"#e8d5a3",fontFamily:"Georgia,serif",fontSize:26,fontWeight:700}}>{fmt(totEntrate-totSpese)}</div>
+      </div>
+    </div>
+    {mesiDati.map(m=><div key={m.mm} style={{...S.card,marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{color:"#e8d5a3",fontWeight:700,fontSize:15}}>{m.nome}</div>
+        <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16}}>{fmt(m.entrate)}</div>
+      </div>
+      <div style={{display:"flex",gap:16,flexWrap:"wrap",fontSize:12,color:"#8892a4"}}>
+        <span>📋 {m.nServ} servizi</span>
+        {m.contanti>0&&<span>💵 Contanti: {fmt(m.contanti)}</span>}
+        {m.bonifico>0&&<span>🏦 Bonifico: {fmt(m.bonifico)}</span>}
+        {m.carta>0&&<span>💳 Carta: {fmt(m.carta)}</span>}
+        {m.altro>0&&<span>📱 Altro: {fmt(m.altro)}</span>}
+        {m.spese_tot>0&&<span style={{color:"#f87171"}}>🔴 Spese: {fmt(m.spese_tot)}</span>}
+      </div>
+    </div>)}
+    {mesiDati.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun dato per questo periodo</div>}
+  </div>;
+}
 export default function App(){
   const [page,setPage]=useState("home");
   const [clienti,setClientiR]=useState([]);
@@ -1900,6 +1965,7 @@ export default function App(){
     {id:"preventivi",l:"Preventivi",i:"fatt"},
     {id:"clienti",l:"Committenti",i:"users"},
     {id:"driver",l:"Driver",i:"car",badge:alerts.length},
+    {id:"report",l:"Report",i:"fatt"},
   ];
 
   if(!loaded)return <div style={{...S.pg,display:"flex",alignItems:"center",justifyContent:"center",color:"#8892a4",fontFamily:"Georgia,serif"}}>Caricamento...</div>;
@@ -1948,6 +2014,7 @@ export default function App(){
       {page==="preventivi"&&<Preventivi refreshTick={refreshTick}/>}
       {page==="clienti"&&<Clienti clienti={clienti} setClienti={setClienti}/>}
       {page==="driver"&&<Driver driver={driver} setDriver={setDriver}/>}
+      {page==="report"&&<Report servizi={srvF} spese={spF} clienti={clienti} driver={driver} anno={anno}/>}
     </div>
   </div>;
 }
