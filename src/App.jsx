@@ -747,6 +747,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       <button onClick={()=>{const d=new Date(dataFiltro+"T12:00:00");d.setDate(d.getDate()-1);setDataFiltro(d.toISOString().slice(0,10));}} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:22,cursor:"pointer",padding:"0 8px"}}>‹</button>
       <input type="date" value={dataFiltro} onChange={e=>setDataFiltro(e.target.value)} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:16,fontFamily:"Georgia,serif",fontWeight:700,cursor:"pointer",textAlign:"center"}}/>
       <button onClick={()=>{const d=new Date(dataFiltro+"T12:00:00");d.setDate(d.getDate()+1);setDataFiltro(d.toISOString().slice(0,10));}} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:22,cursor:"pointer",padding:"0 8px"}}>›</button>
+      <div style={{marginLeft:"auto",color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16}}>{fmt(filtered.reduce((a,s)=>a+prezzoLordo(s),0))}</div>
     </div>
     <div style={{position:"relative",marginBottom:12}}>
       <input style={{...S.inp,paddingLeft:32}} placeholder="Cerca ID, utente, committente, volo..." value={filter} onChange={e=>setFilter(e.target.value)}/>
