@@ -1822,7 +1822,38 @@ function Report({servizi,spese,clienti,driver,anno}){
   const totEntrate=mesiDati.reduce((a,m)=>a+m.entrate,0);
   const totSpese=mesiDati.reduce((a,m)=>a+m.spese_tot,0);
   return <div>
-    <h2 style={{...S.gld,marginTop:0}}>Report {anno!=="tutti"?anno:""}</h2>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <h2 style={{...S.gld,margin:0}}>Report {anno!=="tutti"?anno:""}</h2>
+      <button onClick={()=>{
+        const cli=clienti.find(c=>c.id===filtroC);
+        const drv=driver.find(d=>d.id===filtroD);
+        const w=window.open("","_blank");
+        w.document.write("<html><head><title>Report "+anno+"</title><style>body{font-family:Arial,sans-serif;font-size:12px;color:#000;padding:20px;margin:0}h1{font-size:18px;border-bottom:2px solid #000;padding-bottom:8px}h2{font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px;margin-top:20px}table{width:100%;border-collapse:collapse;margin-bottom:12px}td,th{border:1px solid #ccc;padding:5px 8px;text-align:left}th{background:#f0f0f0;font-weight:bold}.totale{font-weight:bold;font-size:14px}.verde{color:#16a34a}.rosso{color:#dc2626}</style></head><body>");
+        w.document.write("<h1>BLACK DIAMOND TRANSFERT — Report "+anno+(cli?" — "+cli.nome:"")+(drv?" — "+drv.nome:"")+"</h1>");
+        w.document.write("<p>Generato il: "+new Date().toLocaleDateString("it-IT")+"</p>");
+        w.document.write("<h2>Riepilogo Annuale</h2>");
+        w.document.write("<table><tr><th>Voce</th><th>Importo</th></tr>");
+        w.document.write("<tr><td>Totale Entrate</td><td class=verde>€ "+fmt(totEntrate)+"</td></tr>");
+        w.document.write("<tr><td>Totale Spese</td><td class=rosso>€ "+fmt(totSpese)+"</td></tr>");
+        w.document.write("<tr><td class=totale>Utile Lordo</td><td class=totale>€ "+fmt(totEntrate-totSpese)+"</td></tr>");
+        w.document.write("</table>");
+        w.document.write("<h2>Dettaglio Mensile</h2>");
+        w.document.write("<table><tr><th>Mese</th><th>Servizi</th><th>Entrate</th><th>Contanti</th><th>Bonifico</th><th>Carta</th><th>Altro</th><th>Spese</th></tr>");
+        mesiDati.forEach(m=>{w.document.write("<tr><td>"+m.nome+"</td><td>"+m.nServ+"</td><td>€ "+fmt(m.entrate)+"</td><td>€ "+fmt(m.contanti)+"</td><td>€ "+fmt(m.bonifico)+"</td><td>€ "+fmt(m.carta)+"</td><td>€ "+fmt(m.altro)+"</td><td>€ "+fmt(m.spese_tot)+"</td></tr>");});
+        w.document.write("</table>");
+        w.document.write("<h2>Lista Servizi</h2>");
+        w.document.write("<table><tr><th>Data</th><th>Ora</th><th>Passeggero</th><th>Committente</th><th>Driver</th><th>Tipo</th><th>Metodo</th><th>Importo</th></tr>");
+        srv.filter(s=>s.dataPagamento).sort((a,b)=>a.data>b.data?1:-1).forEach(s=>{const c=clienti.find(x=>x.id===s.committenteId);const d=driver.find(x=>x.id===s.driverId);w.document.write("<tr><td>"+s.data+"</td><td>"+(s.ora||"")+"</td><td>"+(s.nomeUtente||"")+"</td><td>"+(c?.nome||"")+"</td><td>"+(d?.nome||"")+"</td><td>"+s.tipo+"</td><td>"+(s.metodoPagamento||"")+"</td><td>€ "+fmt(prezzoLordo(s))+"</td></tr>");});
+        w.document.write("</table>");
+        w.document.write("<h2>Spese per Categoria</h2>");
+        w.document.write("<table><tr><th>Data</th><th>Categoria</th><th>Descrizione</th><th>Importo</th></tr>");
+        sp.sort((a,b)=>a.data>b.data?1:-1).forEach(s=>{w.document.write("<tr><td>"+s.data+"</td><td>"+s.tipo+"</td><td>"+(s.descrizione||"")+"</td><td>€ "+fmt(s.importo)+"</td></tr>");});
+        w.document.write("</table>");
+        w.document.write("</body></html>");
+        w.document.close();
+        setTimeout(()=>w.print(),500);
+      }} style={{background:"#e8d5a3",color:"#000",border:"none",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13,fontWeight:700}}>📄 Esporta PDF</button>
+    </div>
     <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
       <select style={{...S.inp,flex:1,minWidth:160}} value={filtroC} onChange={e=>setFiltroC(e.target.value)}>
         <option value="">Tutti i committenti</option>
