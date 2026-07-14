@@ -580,7 +580,7 @@ function Driver({driver,setDriver}){
       </F>
       <div style={{display:"flex",gap:10}}>
         <F label="Modello Vettura" w="60%"><input style={S.inp} value={form.modello||""} onChange={set("modello")}/></F>
-        <F label="Targa" w="40%"><input style={S.inp} value={form.targa||""} onChange={set("targa")} placeholder="AA000BB"/></F>
+        <F label="Targa" w="40%"><input style={S.inp} value={form.targa||""} onChange={e=>{const nuovaTarga=e.target.value;const vecchiaTarga=form.targa||"";setForm(p=>{const ztlAggiornate=(p.ztl||[]).map(z=>z.permanente&&nuovaTarga!==vecchiaTarga?{...z,scaduta:true}:z);return{...p,targa:nuovaTarga,ztl:ztlAggiornate};});}} placeholder="AA000BB"/></F>
       </div>
       <div style={{display:"flex",gap:10}}>
         <F label="WhatsApp (+39...)" w="50%"><input style={S.inp} value={form.telefono||""} onChange={set("telefono")} placeholder="+393331234567"/></F>
@@ -604,7 +604,7 @@ function Driver({driver,setDriver}){
           <div key={idx} style={{display:"flex",gap:8,marginBottom:6,alignItems:"center"}}>
             <input style={{...S.inp,flex:2}} placeholder="Comune / ZTL" value={z.comune||""} onChange={e=>setForm(p=>({...p,ztl:p.ztl.map((x,j)=>j===idx?{...x,comune:e.target.value}:x)}))}/>
             <input style={{...S.inp,flex:1}} type="date" value={z.scadenza||""} onChange={e=>setForm(p=>({...p,ztl:p.ztl.map((x,j)=>j===idx?{...x,scadenza:e.target.value}:x)}))} title="Lascia vuoto se permanente"/>
-            <span style={{fontSize:10,color:"#8892a4",whiteSpace:"nowrap"}}>{!z.scadenza?"Perm.":""}</span>
+            <label style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#8892a4",whiteSpace:"nowrap",cursor:"pointer"}}><input type="checkbox" checked={z.permanente||false} onChange={e=>setForm(p=>({...p,ztl:p.ztl.map((x,j)=>j===idx?{...x,permanente:e.target.checked,scadenza:e.target.checked?"":x.scadenza}:x)}))}/> Perm.</label>
             <button onClick={()=>setForm(p=>({...p,ztl:p.ztl.filter((_,j)=>j!==idx)}))} style={{...S.bR,padding:"3px 8px",fontSize:12}}>✕</button>
           </div>
         ))}
@@ -1983,7 +1983,7 @@ export default function App(){
     };inp.click();
   };
 
-  const alerts=driver.filter(d=>isExp(d.scadBollo)||isExp(d.scadPatente)||isExp(d.scadAss)||isExp(d.scadRev)||isNear(d.scadBollo)||isNear(d.scadPatente)||isNear(d.scadAss)||isNear(d.scadRev)||(d.ztl||[]).some(z=>z.scadenza&&(isExp(z.scadenza)||isNear(z.scadenza))));
+  const alerts=driver.filter(d=>isExp(d.scadBollo)||isExp(d.scadPatente)||isExp(d.scadAss)||isExp(d.scadRev)||isNear(d.scadBollo)||isNear(d.scadPatente)||isNear(d.scadAss)||isNear(d.scadRev)||(d.ztl||[]).some(z=>z.scaduta||(z.scadenza&&(isExp(z.scadenza)||isNear(z.scadenza)))));
   const daPagare=srvF.filter(s=>!s.dataPagamento).length;
 
   const NAV=[
