@@ -743,11 +743,11 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       <h2 style={{...S.gld,margin:0}}>Servizi {anno!=="tutti"&&<span style={{fontSize:14,color:"#60a5fa"}}>— {anno}</span>}</h2>
       <button style={S.bG} onClick={()=>{setForm({id:uid(),data:today(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false,passeggeri:1});setModal("edit")}}><Ic n="pls" z={14}/>Nuovo</button>
     </div>
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:14,background:"#1a1f2e",borderRadius:8,padding:"10px"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,marginBottom:14,background:"#1a1f2e",position:"relative",borderRadius:8,padding:"10px"}}>
       <button onClick={()=>{const d=new Date(dataFiltro+"T12:00:00");d.setDate(d.getDate()-1);setDataFiltro(d.toISOString().slice(0,10));}} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:22,cursor:"pointer",padding:"0 8px"}}>‹</button>
       <input type="date" value={dataFiltro} onChange={e=>setDataFiltro(e.target.value)} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:16,fontFamily:"Georgia,serif",fontWeight:700,cursor:"pointer",textAlign:"center"}}/>
       <button onClick={()=>{const d=new Date(dataFiltro+"T12:00:00");d.setDate(d.getDate()+1);setDataFiltro(d.toISOString().slice(0,10));}} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:22,cursor:"pointer",padding:"0 8px"}}>›</button>
-      <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14}}>Totale giornaliero: {fmt(filtered.reduce((a,s)=>a+prezzoLordo(s),0))}</div>
+      <div style={{position:"absolute",right:12,color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16}}>Totale: {fmt(filtered.reduce((a,s)=>a+prezzoLordo(s),0))}</div>
     </div>
     <div style={{position:"relative",marginBottom:12}}>
       <input style={{...S.inp,paddingLeft:32}} placeholder="Cerca ID, utente, committente, volo..." value={filter} onChange={e=>setFilter(e.target.value)}/>
