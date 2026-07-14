@@ -535,7 +535,7 @@ function Driver({driver,setDriver}){
   const salva=async()=>{
     if(!form.nome)return alert("Inserire il nome");
     setDriver(p=>{const ex=p.find(d=>d.id===form.id);return ex?p.map(d=>d.id===form.id?form:d):[...p,form]});
-    await supa.from("driver").update({ztl:form.ztl||[]}).eq("id",form.id);
+    const p2=(r.nome||"").trim().split(" ");await supa.from("driver").upsert({id:form.id,nome:p2[0]||"",cognome:p2.slice(1).join("")||"",nome_completo:form.nome,genere:form.genere||"F",modello:form.modello||null,targa:form.targa||null,telefono:form.telefono||null,email:form.email||null,scad_bollo:form.scadBollo||null,scad_patente:form.scadPatente||null,scad_assicurazione:form.scadAss||null,scad_revisione:form.scadRev||null,note:form.note||null,ztl:form.ztl||[]});
     setModal(null);
   };
   const ScT=({label,data})=>{
