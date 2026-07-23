@@ -1,4 +1,4 @@
-const CACHE = "bdt-ncc-v5";
+const CACHE = "bdt-ncc-v6";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
