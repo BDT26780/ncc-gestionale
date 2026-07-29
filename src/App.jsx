@@ -29,7 +29,7 @@ const loadAll=async()=>{
       telefono:r.telefono||"",email:r.email||"",
       scadBollo:r.scad_bollo||"",scadPatente:r.scad_patente||"",
       scadAss:r.scad_assicurazione||"",scadRev:r.scad_revisione||"",
-      note:r.note||"",
+      note:r.note||"",ztl:r.ztl||[],
     }));
     const servizi=(rs.data||[]).map(r=>({
       id:r.id,data:r.data||"",ora:r.ora||"",
@@ -41,7 +41,7 @@ const loadAll=async()=>{
       prezzo:r.prezzo||"",prezzoDriver:r.prezzo_driver||"",
       ivaSeparata:r.iva_separata||false,metodoPagamento:r.metodo_pagamento||"",
       dataPagamento:r.data_pagamento||"",dataFattura:r.data_fattura||"",
-      inFattura:r.in_fattura||false,durataManuale:r.durata_manuale||null,statoFattura:r.stato_fattura||"mancante",
+      inFattura:r.in_fattura||false,durataManuale:r.durata_manuale||null,statoFattura:r.stato_fattura||"mancante",commissione:r.commissione||null,metodoCommissione:r.metodo_commissione||null,
       note:r.note||"",
     }));
     const spese=(rsp.data||[]).map(r=>({
@@ -98,7 +98,7 @@ const saveAll=async(clienti,driver,servizi,spese)=>{
       metodo_pagamento:r.metodoPagamento||null,
       data_pagamento:r.dataPagamento||null,
       data_fattura:r.dataFattura||null,
-      in_fattura:r.inFattura||false,
+      in_fattura:r.inFattura||false,commissione:r.commissione||null,metodo_commissione:r.metodoCommissione||null,
       durata_manuale:r.durataManuale||null,
       note:r.note||null,
     })));
@@ -124,6 +124,7 @@ const deleteRecord=async(table,id)=>{
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 const uid=()=>String(Math.floor(100000+Math.random()*900000));
 const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n||0);
+const fmtD=d=>{if(!d)return"—";const p=d.slice(0,10).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:d;};
 const today=()=>new Date().toISOString().slice(0,10);
 const isExp=d=>d&&new Date(d)<new Date();
 const isNear=d=>{if(!d)return false;const v=(new Date(d)-new Date())/864e5;return v>=0&&v<=30};
@@ -200,17 +201,68 @@ const DelModal=({title,onClose,onConfirm})=>(
   </Modal>
 );
 
+const SwipeToDelete=({onDelete,children})=>{
+  const REVEAL=84;
+  const[dx,setDx]=useState(0);
+  const[revealed,setRevealed]=useState(false);
+  const drag=useRef({active:false,startX:0,startY:0,axis:null,base:0});
+  const onDown=e=>{
+    if(e.clientX<24)return;
+    drag.current={active:true,startX:e.clientX,startY:e.clientY,axis:null,base:revealed?-REVEAL:0};
+  };
+  const onMove=e=>{
+    if(!drag.current.active)return;
+    const diffX=e.clientX-drag.current.startX;
+    const diffY=e.clientY-drag.current.startY;
+    if(!drag.current.axis){
+      if(Math.abs(diffX)<12&&Math.abs(diffY)<12)return;
+      drag.current.axis=Math.abs(diffX)>Math.abs(diffY)?"x":"y";
+    }
+    if(drag.current.axis!=="x")return;
+    let next=drag.current.base+diffX;
+    next=Math.max(-REVEAL,Math.min(0,next));
+    setDx(next);
+  };
+  const onUp=()=>{
+    if(!drag.current.active)return;
+    if(drag.current.axis==="x"){
+      if(dx<-REVEAL/2){setDx(-REVEAL);setRevealed(true);drag.current.justOpened=true;setTimeout(()=>{drag.current.justOpened=false;},300);}
+      else{setDx(0);setRevealed(false);}
+    }
+    drag.current.active=false;drag.current.axis=null;
+  };
+  return <div style={{position:"relative",overflow:"hidden",borderRadius:8,marginBottom:8}}>
+    <div style={{position:"absolute",top:0,right:0,bottom:0,width:REVEAL,display:"flex",opacity:dx<0?1:0,pointerEvents:dx<0?"auto":"none",transition:"opacity 0.15s ease"}}>
+      <button onClick={()=>{onDelete();setDx(0);setRevealed(false);}} style={{flex:1,background:"#dc2626",border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Elimina</button>
+    </div>
+    <div
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
+      onClick={e=>{if(revealed&&!drag.current.justOpened){setDx(0);setRevealed(false);}}}
+      style={{transform:`translateX(${dx}px)`,transition:drag.current.active?"none":"transform 0.2s ease",touchAction:"pan-y",position:"relative",background:"inherit"}}
+    >
+      {children}
+    </div>
+  </div>;
+};
 const PagModal=({onClose,onConfirm})=>{
   const [m,setM]=useState("bonifico");
+  const [dataPag,setDataPag]=useState(today());
   const MT=["contanti","bonifico","carta","mypos","paypal"];
   const EMO={contanti:"💵",bonifico:"🏦",carta:"💳",mypos:"📱",paypal:"🅿️"};
   return <Modal title="Metodo di pagamento" onClose={onClose}>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
       {MT.map(x=><button key={x} onClick={()=>setM(x)} style={{background:m===x?"#3b82f633":"#2d3550",border:`1px solid ${m===x?"#3b82f6":"#3d4a60"}`,borderRadius:8,padding:14,color:m===x?"#60a5fa":"#e2e8f0",fontSize:13,cursor:"pointer",fontWeight:600}}>{EMO[x]} {x}</button>)}
     </div>
+    <div style={{marginBottom:14}}>
+      <div style={{color:"#8892a4",fontSize:12,marginBottom:6}}>Data pagamento</div>
+      <input type="date" style={{...S.inp,fontSize:16}} value={dataPag} onChange={e=>setDataPag(e.target.value)}/>
+    </div>
     <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
       <button style={S.bGr} onClick={onClose}>Annulla</button>
-      <button style={S.bG} onClick={()=>onConfirm(m)}>Conferma</button>
+      <button style={S.bG} onClick={()=>onConfirm(m,dataPag)}>Conferma</button>
     </div>
   </Modal>;
 };
@@ -249,6 +301,7 @@ function Home({servizi,spese,anno,tutteSpese}){
   const st=useMemo(()=>{
     const pag=servizi.filter(s=>s.dataPagamento);
     const tot=pag.reduce((a,s)=>a+prezzoLordo(s),0);
+    const totCommissioni=servizi.reduce((a,s)=>a+(parseFloat(s.commissione)||0),0);
     const xm={contanti:0,bonifico:0,carta:0,mypos:0,paypal:0};
     pag.forEach(s=>{if(s.metodoPagamento)xm[s.metodoPagamento]=(xm[s.metodoPagamento]||0)+prezzoLordo(s)});
     const taxiExtra=anno==="2025"?redditoTaxi:0;
@@ -274,7 +327,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       {label:"oltre 50.000 (43%)",base:Math.max(0,baseOrd-50000),a:.43},
     ].filter(s=>s.base>0);
     const allSp=spese||[];
-    const ivaCred=allSp.reduce((a,s)=>{if(s.isQuota){if(s.quotaNum===1){const m=s.descrizione?.match(/\[IVA:([\d.]+)\]/);return a+(m?parseFloat(m[1]):0);}return a;}const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
+    const ivaCred=allSp.reduce((a,s)=>{const m=s.descrizione?.match(/\[IVA:([\d.]+)\]/);if(m)return a+parseFloat(m[1]);if(s.isQuota)return a;const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
     const ivaNet=iva-ivaCred;
     // IVA cumulativa: il credito non usato si riporta al trimestre successivo
     const trim=(()=>{
@@ -282,7 +335,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       return TRIM.map(t=>{
         const mOk=d=>t.months.includes(parseInt(d?.slice(5,7)));
         const deb=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)&&mOk(s.dataPagamento)).reduce((a,s)=>a+ivaS(s),0);
-        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{if(s.isQuota){if(s.quotaNum===1){const m=s.descrizione?.match(/\[IVA:([\d.]+)\]/);return a+(m?parseFloat(m[1]):0);}return a;}const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
+        const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{const m=s.descrizione?.match(/\[IVA:([\d.]+)\]/);if(m)return a+parseFloat(m[1]);if(s.isQuota)return a;const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
         const saldo=deb-(cred+riporto);
         const daVersare=Math.max(0,saldo);
         const nuovoCred=Math.max(0,-saldo);
@@ -305,7 +358,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       const ded=b.quote.filter(q=>q.anno<=annoC).reduce((a,q)=>a+q.imp,0);
       return{...b,ded,res:b.totale-ded,future:b.quote.filter(q=>q.anno>annoC).sort((a,z)=>a.anno-z.anno)};
     }).filter(b=>b.totale>0);
-    return{tot,xm,dich,dichNetto,iva,ivaCred,ivaNet,totSp,commB,inpsPre,perditaPre,det19,impDet,baseOrd,irpef,irpefN,inps,tassaOrd:irpefN+inps,baseForf,tassaForf:baseForf*0.15,detIRPEF,trim,ammort,annoC};
+    return{tot,xm,dich,dichNetto,iva,ivaCred,ivaNet,totSp,commB,inpsPre,perditaPre,det19,impDet,baseOrd,irpef,irpefN,inps,tassaOrd:irpefN+inps,baseForf,tassaForf:baseForf*0.15,detIRPEF,trim,ammort,annoC,totCommissioni};
   },[servizi,spese,tutteSpese]);
 
   const Row=({l,v,s})=><div style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #1e2435"}}>
@@ -322,8 +375,9 @@ function Home({servizi,spese,anno,tutteSpese}){
     <h2 style={{...S.gld,marginTop:0}}>Dashboard {anno!=="tutti"&&<span style={{fontSize:14,color:"#60a5fa"}}>— {anno}</span>}</h2>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))",gap:12}}>
       <Card title="Entrate totali" col="#e8d5a3">
-        <Big val={st.tot}/>
+        <Big val={st.totCommissioni>0?st.tot-st.totCommissioni:st.tot}/>
         {Object.entries(st.xm).map(([k,v])=><Row key={k} l={k} v={fmt(v)} s/>)}
+        {st.totCommissioni>0&&<><Row l="Totale lordo" v={fmt(st.tot)} s/><Row l="— Commissioni" v={"- "+fmt(st.totCommissioni)} s/></>}
       </Card>
       {anno==="2025"&&<Card title="Reddito Taxi 2025 (esente IVA)" col="#f59e0b">
         <div style={{fontSize:11,color:"#c8d3e0",marginBottom:8}}>Reddito da attività taxi precedente all'NCC — esente IVA, sommato al reddito NCC per IRPEF</div>
@@ -385,13 +439,16 @@ function Home({servizi,spese,anno,tutteSpese}){
         {showSpeseDett&&<div style={{marginTop:10,maxHeight:300,overflowY:"auto"}}>
           {spese.filter(s=>s.tipo!=="inps_anno_prec"&&s.tipo!=="detrazioni_19"&&s.tipo!=="perdita_anno_prec").map(s=>(
             <div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #1e2435",fontSize:11}}>
-              <span style={{color:"#c8d3e0"}}>{s.descrizione||s.tipo}<br/><span style={{color:"#6b7280"}}>{s.data} · {s.tipo}</span></span>
+              <span style={{color:"#c8d3e0"}}>{s.descrizione||s.tipo}<br/><span style={{color:"#6b7280"}}>{fmtD(s.data)} · {s.tipo}</span></span>
               <span style={{color:"#f87171",fontWeight:700}}>{fmt(s.importo)}</span>
             </div>
           ))}
           {spese.filter(s=>s.tipo!=="inps_anno_prec"&&s.tipo!=="detrazioni_19"&&s.tipo!=="perdita_anno_prec").length===0&&<div style={{color:"#6b7280",fontSize:11,padding:"6px 0"}}>Nessuna spesa in questo periodo</div>}
         </div>}
       </Card>
+      {st.totCommissioni>0&&<Card title="Commissioni" col="#f87171">
+        <Big val={st.totCommissioni} col="#f87171"/>
+      </Card>}
     </div>
 
     {/* IVA COMPENSAZIONE */}
@@ -535,7 +592,7 @@ function Driver({driver,setDriver}){
   const salva=async()=>{
     if(!form.nome)return alert("Inserire il nome");
     setDriver(p=>{const ex=p.find(d=>d.id===form.id);return ex?p.map(d=>d.id===form.id?form:d):[...p,form]});
-    const p2=(r.nome||"").trim().split(" ");await supa.from("driver").upsert({id:form.id,nome:p2[0]||"",cognome:p2.slice(1).join("")||"",nome_completo:form.nome,genere:form.genere||"F",modello:form.modello||null,targa:form.targa||null,telefono:form.telefono||null,email:form.email||null,scad_bollo:form.scadBollo||null,scad_patente:form.scadPatente||null,scad_assicurazione:form.scadAss||null,scad_revisione:form.scadRev||null,note:form.note||null,ztl:form.ztl||[]});
+    const p2=(form.nome||"").trim().split(" ");await supa.from("driver").upsert({id:form.id,nome:p2[0]||"",cognome:p2.slice(1).join("")||"",nome_completo:form.nome,genere:form.genere||"F",modello:form.modello||null,targa:form.targa||null,telefono:form.telefono||null,email:form.email||null,scad_bollo:form.scadBollo||null,scad_patente:form.scadPatente||null,scad_assicurazione:form.scadAss||null,scad_revisione:form.scadRev||null,note:form.note||null,ztl:form.ztl||[]});
     setModal(null);
   };
   const ScT=({label,data})=>{
@@ -652,7 +709,7 @@ function msgUtente(s,drv){
   const pickup=s.pickup||"";
   const dropoff=s.dropoff||"";
   const tratta=pickup&&dropoff?` da ${pickup} a ${dropoff}`:"";
-  const tipoMsg=s.tipo==="disposizione"?`per la vostra prenotazione di disposizione di ${s.oreDisp||1} ore`:`per la vostra prenotazione di trasferimento${tratta}`;
+  const tipoMsg=s.tipo==="disposizione"?`per la vostra prenotazione di disposizione di ${s.oreDisp||1} ore`:s.tipo==="combinato"?`per la vostra prenotazione combinata (disposizione ${s.oreDisp||1}h + trasferimento${tratta})`:s.tipo==="ar"?`per la vostra prenotazione andata e ritorno${tratta}`:`per la vostra prenotazione di trasferimento${tratta}`;
   return nome?`Salve, sono ${nome} ${autista} e sono già sul posto, ${pronto} ${tipoMsg}!`:"Salve, siamo già sul posto, pronti ad accogliervi!";
 }
 const apriWA=(tel,msg)=>{
@@ -673,7 +730,7 @@ function apriGCal(s,drv,cli){
   const titolo="Prenotazione "+(s.pickup||"—")+" - "+(s.dropoff||"—");
   const det=[
     "Committente: "+(cli?.nome||"—"),
-    "Passeggero: "+(s.nomeUtente||"—"),
+    "Passeggero: "+(s.nomeUtente||"—")+(s.telefonoUtente?" · Tel: "+s.telefonoUtente:""),
     s.passeggeri>1?"N° Passeggeri: "+s.passeggeri+(s.bagagli>0?" · Bagagli: "+s.bagagli:""):"",
     "Driver: "+(drv?.nome||"—")+(drv?.targa?" ("+drv.targa+")":""),
     s.numeroVolo?"Volo/Treno: "+s.numeroVolo:"",
@@ -742,46 +799,49 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
       <h2 style={{...S.gld,margin:0}}>Servizi {anno!=="tutti"&&<span style={{fontSize:14,color:"#60a5fa"}}>— {anno}</span>}</h2>
-      <button style={S.bG} onClick={()=>{setForm({id:uid(),data:today(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false,passeggeri:1});setModal("edit")}}><Ic n="pls" z={14}/>Nuovo</button>
+      <button style={S.bG} onClick={()=>{setForm({id:uid(),data:dataFiltro||today(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false,passeggeri:1});setModal("edit")}}><Ic n="pls" z={14}/>Nuovo</button>
     </div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,marginBottom:14,background:"#1a1f2e",position:"relative",borderRadius:8,padding:"10px"}}>
       <button onClick={()=>{const d=new Date(dataFiltro+"T12:00:00");d.setDate(d.getDate()-1);setDataFiltro(d.toISOString().slice(0,10));}} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:22,cursor:"pointer",padding:"0 8px"}}>‹</button>
-      <input type="date" value={dataFiltro} onChange={e=>setDataFiltro(e.target.value)} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:16,fontFamily:"Georgia,serif",fontWeight:700,cursor:"pointer",textAlign:"center"}}/>
+      <input type="date" id="dateFiltroInput" value={dataFiltro} onChange={e=>setDataFiltro(e.target.value)} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:16,fontFamily:"Georgia,serif",fontWeight:700,cursor:"pointer",textAlign:"center"}}/>
       <button onClick={()=>{const d=new Date(dataFiltro+"T12:00:00");d.setDate(d.getDate()+1);setDataFiltro(d.toISOString().slice(0,10));}} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:22,cursor:"pointer",padding:"0 8px"}}>›</button>
-      <div style={{position:"absolute",right:12,color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16}}>Totale: {fmt(filtered.reduce((a,s)=>a+prezzoLordo(s),0))}</div>
+      <button onClick={()=>document.getElementById("dateFiltroInput").showPicker()} style={{background:"none",border:"none",color:"#e8d5a3",fontSize:18,cursor:"pointer",padding:"0 4px",marginLeft:4}}>📅</button>
+      <button onClick={()=>setDataFiltro(today())} style={{position:"absolute",right:12,background:"#2d3550",border:"1px solid #3d4a60",borderRadius:6,color:"#e8d5a3",fontSize:11,cursor:"pointer",padding:"3px 8px",fontWeight:600}}>Oggi</button>
     </div>
     <div style={{position:"relative",marginBottom:12}}>
       <input style={{...S.inp,paddingLeft:32}} placeholder="Cerca ID, utente, committente, volo..." value={filter} onChange={e=>setFilter(e.target.value)}/>
       <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8892a4",pointerEvents:"none"}}><Ic n="src" z={14}/></span>
     </div>
-    {!filter&&nPagati>0&&<div style={{fontSize:12,color:"#6b7280",marginBottom:10,padding:"6px 10px",background:"#1a1f2e",borderRadius:6,border:"1px solid #2d3550"}}>
-      {mostraTutti?"Nascondo i pagati":""+nPagati+" servizi pagati nascosti — cerca o premi Mostra tutti"}
-    </div>}
+    <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10,padding:"6px 10px",background:"#1a1f2e",borderRadius:6,border:"1px solid #2d3550"}}>
+      <span style={{color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16}}>Totale: {fmt(filtered.reduce((a,s)=>a+prezzoLordo(s),0))}</span>
+    </div>
 
     {filtered.map(s=>{
       const drv=driver.find(d=>d.id===s.driverId);
       const cli=clienti.find(c=>c.id===s.committenteId);
       const col=dcol(s.driverId,driver);
-      return <div key={s.id} style={{...S.card,border:s.dataPagamento?"2px solid #4ade80":`1px solid #2d3550`,boxShadow:s.dataPagamento?"0 0 8px #4ade8066":undefined,background:s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
+      return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.dataPagamento?"2px solid #4ade80":`1px solid #2d3550`,boxShadow:s.dataPagamento?"0 0 8px #4ade8066":undefined,background:s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
         {inline!==s.id?<div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
             <div style={{flex:1,minWidth:170}}>
               <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:4}}>
                 <span style={{color:"#e8d5a3",fontFamily:"monospace",fontSize:11}}>{s.id}</span>
-                <Badge color={s.tipo==="trasferimento"?"blue":"amber"}>{s.tipo==="trasferimento"?"Trasf.":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
+                <Badge color={s.tipo==="trasferimento"?"blue":s.tipo==="ar"?"teal":s.tipo==="combinato"?"green":"amber"}>{s.tipo==="trasferimento"?"Trasf.":s.tipo==="ar"?"A/R":s.tipo==="combinato"?"Comb. "+(s.oreDisp||"?")+"h":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
                 {s.ivaSeparata&&<Badge color="teal">+IVA</Badge>}
                 {s.numeroVolo&&<Badge color="gray">{s.numeroVolo}</Badge>}
                 {s.dataPagamento&&<Badge color="green">Pagato</Badge>}
                 {s.inFattura&&!s.dataPagamento&&<Badge color="teal">In fattura</Badge>}
-                {!s.dataFattura&&!["contanti","paypal","mypos"].includes(s.metodoPagamento)&&<Badge color="amber">Fattura mancante</Badge>}
+                {(s.statoFattura==="mancante"||!s.statoFattura)&&!["contanti","paypal","mypos"].includes(s.metodoPagamento)&&<Badge color="amber">Fattura mancante</Badge>}
+                {s.statoFattura==="preparata"&&<Badge color="amber">Fattura preparata</Badge>}
+                {s.statoFattura==="emessa"&&<Badge color="green">Fattura emessa</Badge>}
               </div>
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
-              <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
+              <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600,marginTop:3}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome||"—"} · <span style={{color:col}}>{drv?.nome||"—"} {drv?.targa&&"("+drv.targa+")"}</span></div>
               <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
               {(s.passeggeri>1||s.bagagli)&&<div style={{color:"#8892a4",fontSize:11}}>👥 {s.passeggeri||1} pax {s.bagagli?"· 🧳 "+s.bagagli+" bag":""}</div>}
               {s.telefonoUtente&&<div style={{color:"#8892a4",fontSize:11}}>Pass. WA: {s.telefonoUtente}</div>}
-              {s.dataPagamento&&<div style={{color:"#4b5563",fontSize:11}}>Pagato {s.dataPagamento} · {s.metodoPagamento}</div>}
+              {s.dataPagamento&&<div style={{color:"#4b5563",fontSize:11}}>Pagato {fmtD(s.dataPagamento)} · {s.metodoPagamento}</div>}
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5}}>
               <div style={{textAlign:"right"}}>
@@ -789,19 +849,18 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                 <div style={{fontSize:10,color:"#8892a4"}}>imp. {fmt(s.ivaSeparata?parseFloat(s.prezzo)||0:(parseFloat(s.prezzo)||0)/1.1)} + IVA {fmt(ivaS(s))}</div>
               </div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                <button onClick={()=>upd(s.id,{dataFattura:s.dataFattura?null:today()})} style={{background:s.dataFattura?"#16a34a22":"#2d3550",border:"1px solid "+(s.dataFattura?"#16a34a":"#3d4a60"),borderRadius:4,padding:"3px 7px",color:s.dataFattura?"#4ade80":"#8892a4",cursor:"pointer",fontSize:11}}>
-                  {s.dataFattura?"📄 "+s.dataFattura+"  ✕":"📄 Fattura"}
+                <button onClick={()=>upd(s.id,{dataFattura:s.dataFattura?null:today()})} style={{background:s.dataFattura?"#16a34a22":"#2d3550",border:"1px solid "+(s.dataFattura?"#16a34a":"#3d4a60"),borderRadius:4,padding:"6px 12px",color:s.dataFattura?"#4ade80":"#8892a4",cursor:"pointer",fontSize:13}}>
+                  {s.dataFattura?"📄 "+fmtD(s.dataFattura)+"  ✕":"📄 Fattura"}
                 </button>
                 {!s.dataPagamento
-                  ?<button onClick={()=>setPagId(s.id)} style={{background:"#2d3550",border:"1px solid #3d4a60",borderRadius:4,padding:"3px 7px",color:"#8892a4",cursor:"pointer",fontSize:11}}>💳 Paga</button>
-                  :<button onClick={()=>upd(s.id,{dataPagamento:null,metodoPagamento:null})} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"3px 7px",color:"#4ade80",cursor:"pointer",fontSize:11}}>✓ {s.metodoPagamento} ✕</button>
+                  ?<button onClick={()=>setPagId(s.id)} style={{background:"#2d3550",border:"1px solid #3d4a60",borderRadius:4,padding:"6px 12px",color:"#8892a4",cursor:"pointer",fontSize:13}}>💳 Paga</button>
+                  :<button onClick={()=>upd(s.id,{dataPagamento:null,metodoPagamento:null})} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"6px 12px",color:"#4ade80",cursor:"pointer",fontSize:13}}>✓ {s.metodoPagamento} ✕</button>
                 }
-                <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"3px 7px"}}><Ic n="edt" z={12}/></button>
-                <button onClick={()=>setDelId(s.id)} style={{...S.bR,padding:"3px 7px"}}><Ic n="trs" z={12}/></button>
-                <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"3px 7px",color:"#25d366",cursor:"pointer",fontSize:11,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
-                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"3px 7px",color:"#86efac",cursor:"pointer",fontSize:11,fontWeight:700}}>WA Pass.</button>}
-                <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"3px 7px",color:"#4285f4",cursor:"pointer",fontSize:11,fontWeight:700}}>GCal</button>
-                {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"3px 7px",color:"#a78bfa",cursor:"pointer",fontSize:11,fontWeight:700}}>🪧 Cartello</button>}
+                <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"6px 12px"}}><Ic n="edt" z={14}/></button>
+                <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"6px 12px",color:"#25d366",cursor:"pointer",fontSize:13,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
+                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"6px 12px",color:"#86efac",cursor:"pointer",fontSize:13,fontWeight:700}}>WA Pass.</button>}
+                <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"6px 12px",color:"#4285f4",cursor:"pointer",fontSize:13,fontWeight:700}}>GCal</button>
+                {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"6px 12px",color:"#a78bfa",cursor:"pointer",fontSize:13,fontWeight:700}}>🪧 Cartello</button>}
               </div>
             </div>
           </div>
@@ -844,12 +903,12 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
             <button onClick={()=>{setForm({...s});setModal("edit");setInline(null);}} style={{...S.bGr,padding:"5px 14px"}}>Modifica completa</button>
           </div>
         </div>}
-      </div>;
+      </div></SwipeToDelete>;
     })}
     {filtered.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun servizio</div>}
 
     {delId&&<DelModal title="Eliminare questo servizio?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("servizi",delId);setServizi(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
-    {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={m=>{upd(pagId,{dataPagamento:today(),metodoPagamento:m});setPagId(null);}}/>}
+    {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={(m,d)=>{upd(pagId,{dataPagamento:d||today(),metodoPagamento:m});setPagId(null);}}/>}
 
     {cartelloPass&&<div
       style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"space-evenly",gap:0,padding:"20px 40px"}}
@@ -886,18 +945,18 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
     </Modal>}
 
     {modal==="edit"&&<Modal title={servizi.find(s=>s.id===form.id)?`Modifica ${form.id}`:`Nuovo — ${form.id}`} onClose={()=>setModal(null)}>
-      <div style={{display:"flex",gap:10}}>
+      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         <F label="Data" w="50%"><input style={S.inp} type="date" value={form.data||""} onChange={set("data")}/></F>
         <F label="Ora" w="50%"><input style={S.inp} type="time" value={form.ora||""} onChange={set("ora")}/></F>
-      <F label="Durata (ore)"><input style={S.inp} type="number" step="0.5" min="0.5" max="24" defaultValue={form.durataManuale||1.5} key={"dur-"+form.id} onBlur={e=>setForm(p=>({...p,durataManuale:parseFloat(e.target.value)||1.5}))}/></F>
       </div>
+      <F label="Durata (ore)"><input style={S.inp} type="number" step="0.5" min="0.5" max="24" defaultValue={form.durataManuale||1.5} key={"dur-"+form.id} onBlur={e=>setForm(p=>({...p,durataManuale:parseFloat(e.target.value)||1.5}))}/></F>
       <div style={{display:"flex",gap:10}}>
         <F label="Committente" w="50%"><select style={S.inp} value={form.committenteId||""} onChange={e=>{const cli=clienti.find(c=>c.id===e.target.value);setForm(p=>({...p,committenteId:e.target.value,telefonoUtente:cli?.telefono||p.telefonoUtente||""}));}}><option value="">—</option>{clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}</select></F>
         <F label="Driver" w="50%"><select style={S.inp} value={form.driverId||""} onChange={set("driverId")}><option value="">—</option>{driver.map(d=><option key={d.id} value={d.id}>{d.nome}{d.targa?" ("+d.targa+")":""}</option>)}</select></F>
       </div>
       <div style={{display:"flex",gap:10}}>
-        <F label="Tipo" w="50%"><select style={S.inp} value={form.tipo||"trasferimento"} onChange={set("tipo")}><option value="trasferimento">Trasferimento</option><option value="disposizione">Disposizione Oraria</option></select></F>
-        {form.tipo==="disposizione"&&<F label="Ore" w="50%"><select style={S.inp} value={form.oreDisp||2} onChange={e=>setForm(p=>({...p,oreDisp:parseInt(e.target.value)}))}>{[1,2,3,4,5,6,7,8,9,10,11,12].map(h=><option key={h} value={h}>{h}h</option>)}</select></F>}
+        <F label="Tipo" w="50%"><select style={S.inp} value={form.tipo||"trasferimento"} onChange={set("tipo")}><option value="trasferimento">Trasferimento</option><option value="disposizione">Disposizione Oraria</option><option value="combinato">Combinato (Disp. + Trasf.)</option><option value="ar">Andata e Ritorno</option></select></F>
+        {(form.tipo==="disposizione"||form.tipo==="combinato")&&<F label="Ore disp." w="50%"><select style={S.inp} value={form.oreDisp||2} onChange={e=>setForm(p=>({...p,oreDisp:parseInt(e.target.value)}))}>{[1,2,3,4,5,6,7,8,9,10,11,12].map(h=><option key={h} value={h}>{h}h</option>)}</select></F>}
       </div>
       <div style={{display:"flex",gap:10}}>
         <F label="Nome Passeggero" w="50%"><input style={S.inp} value={form.nomeUtente||""} onChange={set("nomeUtente")}/></F>
@@ -930,6 +989,10 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       <div style={{display:"flex",gap:10}}>
         <F label="Data fattura" w="50%"><input style={S.inp} type="date" value={form.dataFattura||""} onChange={set("dataFattura")}/></F>
         <F label="Data pagamento" w="50%"><input style={S.inp} type="date" value={form.dataPagamento||""} onChange={set("dataPagamento")}/></F>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <F label="Commissione (€)" w="50%"><input style={S.inp} type="number" step="0.01" value={form.commissione||""} onChange={e=>setForm(p=>({...p,commissione:e.target.value||null}))}/></F>
+        <F label="Metodo commissione" w="50%"><select style={S.inp} value={form.metodoCommissione||""} onChange={set("metodoCommissione")}><option value="">—</option><option value="paypal">PayPal</option><option value="contanti">Contanti</option></select></F>
       </div>
       <F label="Note"><textarea style={{...S.inp,minHeight:48,resize:"vertical"}} value={form.note||""} onChange={set("note")}/></F>
       <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:8}}>
@@ -1057,104 +1120,78 @@ function Calendario({servizi,setServizi,driver}){
 }
 
 // ── FATTURAZIONE ──────────────────────────────────────────────────────────────
-function Fatturazione({servizi,setServizi,clienti,driver}){
-  const [filtroC,setFiltroC]=useState("");
-  const [pagModal,setPagModal]=useState(null);
-  const upd=(ids,met)=>{
-    setServizi(p=>p.map(s=>ids.includes(s.id)?{...s,dataPagamento:today(),metodoPagamento:met,dataFattura:s.dataFattura||today()}:s));
-    setPagModal(null);
-  };
-  const toggle=id=>setServizi(p=>p.map(s=>s.id===id?{...s,inFattura:!s.inFattura}:s));
-  const daFatt=servizi.filter(s=>s.inFattura&&!s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
-  const perCli=clienti.map(cl=>{
-    const ss=daFatt.filter(s=>s.committenteId===cl.id);
-    if(!ss.length)return null;
-    return{cli:cl,ss,tot:ss.reduce((a,s)=>a+prezzoLordo(s),0)};
-  }).filter(Boolean);
-  const disponibili=servizi.filter(s=>!s.inFattura&&!s.dataPagamento&&(!filtroC||s.committenteId===filtroC)).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
-
-  return <div>
-    <h2 style={{...S.gld,marginTop:0}}>Fatturazione</h2>
-    {perCli.length>0?<div style={{marginBottom:20}}>
-      <div style={{fontSize:11,color:"#8892a4",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Da fatturare e incassare</div>
-      {perCli.map(({cli,ss,tot})=>{
-        const ids=ss.map(s=>s.id);
-        return <div key={cli.id} style={{...S.card,border:"1px solid #e8d5a344",marginBottom:10}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8,marginBottom:10}}>
-            <div>
-              <div style={{color:"#e8d5a3",fontWeight:700,fontSize:14}}>{cli.nome}</div>
-              <div style={{color:"#8892a4",fontSize:12}}>{ss.length} servizi</div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-              <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700}}>{fmt(tot)}</div>
-              <button onClick={()=>setPagModal({ids,nome:cli.nome,tot})} style={{background:"#16a34a",border:"none",color:"white",borderRadius:6,padding:"7px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>Emetti fattura e segna pagato</button>
-            </div>
-          </div>
-          <div style={{borderTop:"1px solid #2d3550",paddingTop:8}}>
-            {ss.map(s=>{
-              const drv=driver.find(d=>d.id===s.driverId);
-              return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid #1e2435"}}>
-                <div>
-                  <div style={{color:"#c8d3e0",fontSize:12}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
-                  <div style={{color:"#8892a4",fontSize:11}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{color:"#4ade80",fontWeight:700,fontFamily:"Georgia,serif",fontSize:13}}>{fmt(prezzoLordo(s))}</span>
-                  <button onClick={()=>toggle(s.id)} style={{background:"#3d1515",border:"none",color:"#f87171",borderRadius:4,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Rimuovi</button>
-                </div>
-              </div>;
-            })}
-          </div>
-        </div>;
-      })}
-    </div>:<div style={{...S.card,textAlign:"center",color:"#4b5563",marginBottom:16}}>Nessun servizio in fatturazione. Aggiungili qui sotto.</div>}
-
-    <div>
-      <div style={{fontSize:11,color:"#8892a4",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Aggiungi servizi alla fattura</div>
-      <select style={{...S.inp,marginBottom:10}} value={filtroC} onChange={e=>setFiltroC(e.target.value)}>
-        <option value="">Tutti i committenti</option>
-        {clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
-      </select>
-      {disponibili.map(s=>{
-        const cli=clienti.find(c=>c.id===s.committenteId);
-        const drv=driver.find(d=>d.id===s.driverId);
-        const col=dcol(s.driverId,driver);
-        return <div key={s.id} style={{...S.card,borderLeft:`4px solid ${col}`,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          <div style={{flex:1}}>
-            <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
-            <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome||"—"} · <span style={{color:col}}>{drv?.nome||"—"}</span></div>
-            <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{color:"#4ade80",fontWeight:700,fontFamily:"Georgia,serif"}}>{fmt(prezzoLordo(s))}</span>
-            <button onClick={()=>toggle(s.id)} style={{background:"#1e3050",border:"1px solid #3b82f6",color:"#60a5fa",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>+ Aggiungi</button>
-          </div>
-        </div>;
-      })}
-      {disponibili.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:20}}>Nessun servizio disponibile</div>}
-    </div>
-    {pagModal&&<PagModal onClose={()=>setPagModal(null)} onConfirm={m=>upd(pagModal.ids,m)}/>}
-  </div>;
-}
-
 // ── DA PAGARE ─────────────────────────────────────────────────────────────────
 function DaPagare({servizi,clienti,driver,setServizi}){
   const [filtroC,setFiltroC]=useState("");
   const [pagId,setPagId]=useState(null);
-  const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura"}[k]||k,v]))).eq("id",id);};
+  const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura",inFattura:"in_fattura",commissione:"commissione",metodoCommissione:"metodo_commissione"}[k]||k,v]))).eq("id",id);};
+  const toggleFattura=async(s)=>{const val=!s.inFattura;setServizi(p=>p.map(x=>x.id===s.id?{...x,inFattura:val}:x));await supa.from("servizi").update({in_fattura:val}).eq("id",s.id);};
+  const updBulk=async(ids,dt)=>{setServizi(p=>p.map(s=>ids.includes(s.id)?{...s,statoFattura:"emessa",dataFattura:dt}:s));await Promise.all(ids.map(id=>supa.from("servizi").update({stato_fattura:"emessa",data_fattura:dt}).eq("id",id)));};
+  const [pagBulkModal,setPagBulkModal]=useState(null);
+  const [fattModal,setFattModal]=useState(null);
+  const updPagaBulk=async(ids,met,dt)=>{const d=dt||today();setServizi(p=>p.map(s=>ids.includes(s.id)?{...s,dataPagamento:d,metodoPagamento:met}:s));await Promise.all(ids.map(id=>supa.from("servizi").update({data_pagamento:d,metodo_pagamento:met}).eq("id",id)));};
   const cycleFattura=async(s)=>{const sf=s.statoFattura||"mancante";let patch;if(sf==="mancante")patch={statoFattura:"preparata"};else if(sf==="preparata")patch={statoFattura:"emessa",dataFattura:today()};else patch={statoFattura:"mancante",dataFattura:null};setServizi(p=>p.map(x=>x.id===s.id?{...x,...patch}:x));await supa.from("servizi").update({stato_fattura:patch.statoFattura,data_fattura:patch.dataFattura||null}).eq("id",s.id);};
-  const lista=servizi.filter(s=>!filtroC||s.committenteId===filtroC);
-  const mesi=[...new Set(lista.map(s=>s.data?.slice(0,7)))].filter(Boolean).sort().reverse();
+  const [filtroTesto,setFiltroTesto]=useState("");
+  const [delPagId,setDelPagId]=useState(null);
+  const inFatturaList=servizi.filter(s=>s.inFattura&&!s.dataPagamento);
+  const perCli=clienti.map(cl=>{const all=inFatturaList.filter(s=>s.committenteId===cl.id);if(!all.length)return null;const nonPag=all.filter(s=>!s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);const pag=all.filter(s=>s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);const ss=[...nonPag,...pag];return{cli:cl,ss,tot:nonPag.reduce((a,s)=>a+prezzoLordo(s),0)};}).filter(Boolean);
+  const matchTesto=s=>{if(!filtroTesto)return true;const q=filtroTesto.toLowerCase();const cli=clienti.find(c=>c.id===s.committenteId);const drv=driver.find(d=>d.id===s.driverId);return(fmtD(s.data)||"").toLowerCase().includes(q)||(s.data||"").includes(q)||(s.nomeUtente||"").toLowerCase().includes(q)||(cli?.nome||"").toLowerCase().includes(q)||(drv?.nome||"").toLowerCase().includes(q)||(s.pickup||"").toLowerCase().includes(q)||(s.dropoff||"").toLowerCase().includes(q);};
+  const lista=servizi.filter(s=>(!filtroC||s.committenteId===filtroC)&&(!s.inFattura||s.dataPagamento)&&matchTesto(s));
+  const oggi=new Date().toISOString().slice(0,7);
+  const mesi=[...new Set(lista.map(s=>s.data?.slice(0,7)))].filter(Boolean).sort((a,b)=>{const aPass=a<=oggi;const bPass=b<=oggi;if(aPass&&!bPass)return -1;if(!aPass&&bPass)return 1;return a>b?1:-1;});
   const tot=lista.filter(s=>!s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
   return <div>
     <h2 style={{...S.gld,marginTop:0}}>Da Pagare</h2>
-    <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
+    <div style={{display:"flex",gap:10,marginBottom:10,alignItems:"center",flexWrap:"wrap"}}>
       <select style={{...S.inp,flex:1,minWidth:180}} value={filtroC} onChange={e=>setFiltroC(e.target.value)}>
         <option value="">Tutti i committenti</option>
         {clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
       </select>
       <div style={{background:"#dc262633",border:"1px solid #dc2626",borderRadius:8,padding:"5px 12px",color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(tot)}</div>
     </div>
+    <div style={{position:"relative",marginBottom:14}}>
+      <input style={{...S.inp,paddingLeft:32}} placeholder="Cerca data, nome, committente, percorso..." value={filtroTesto} onChange={e=>setFiltroTesto(e.target.value)}/>
+      <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#8892a4",pointerEvents:"none"}}>🔍</span>
+    </div>
+    {perCli.length>0&&<div style={{marginBottom:20}}>
+      <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Da fatturare e incassare</div>
+      {perCli.map(({cli,ss,tot:totG})=>(
+        <div key={cli.id} style={{...S.card,border:"1px solid #e8d5a344",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
+            <div style={{flex:1,minWidth:0}}><div style={{color:"#e8d5a3",fontWeight:700,fontSize:14}}>{cli.nome}</div><div style={{color:"#8892a4",fontSize:12}}>{ss.length} servizi</div></div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+              <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:18,fontWeight:700}}>{fmt(totG)}</div>
+              <button onClick={()=>setFattModal(ss.map(s=>s.id))} style={{background:"#1e3a6e",border:"1px solid #3b82f6",color:"#60a5fa",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>📄 Emetti fattura</button>
+              <button onClick={()=>{const ids=ss.filter(s=>!s.dataPagamento).map(s=>s.id);if(ids.length)setPagBulkModal(ids);}} style={{background:"#16a34a",border:"none",color:"white",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>💳 Segna tutti pagati</button>
+            </div>
+          </div>
+          <div style={{borderTop:"1px solid #2d3550",paddingTop:6}}>
+            {ss.map(s=>{
+              const drv=driver.find(d=>d.id===s.driverId);
+              const sf=s.statoFattura||"mancante";
+              const fattColor=sf==="emessa"?"#4ade80":sf==="preparata"?"#fbbf24":"#f87171";
+              const fattLabel=sf==="emessa"?"✅ Emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
+              const pagato=!!s.dataPagamento;
+              return <div key={s.id} style={{padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:pagato?"1px solid #4ade8033":"1px solid #dc262433"}}>
+                <div style={{marginBottom:5}}>
+                  <div style={{color:"#c8d3e0",fontSize:13}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
+                  <div style={{color:"#8892a4",fontSize:12}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
+                  {pagato&&<div style={{color:"#4ade80",fontSize:12}}>✓ Pagato {fmtD(s.dataPagamento)} · {s.metodoPagamento}</div>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderTop:"1px solid #2d3550",paddingTop:5}}>
+                  <span style={{color:"#4ade80",fontWeight:700,fontFamily:"Georgia,serif",fontSize:13}}>{fmt(prezzoLordo(s))}</span>
+                  <div style={{display:"flex",gap:5}}>
+                    <button onClick={()=>cycleFattura(s)} style={{background:"none",border:"1px solid "+fattColor+"44",color:fattColor,cursor:"pointer",fontSize:11,padding:"2px 8px",borderRadius:4}}>{fattLabel}</button>
+                    {!pagato&&<button onClick={()=>setPagId(s.id)} style={{background:"#16a34a",border:"none",color:"white",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:11,fontWeight:600}}>Paga</button>}
+                    <button onClick={()=>toggleFattura(s)} style={{background:"#3d1515",border:"none",color:"#f87171",borderRadius:4,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Rimuovi</button>
+                  </div>
+                </div>
+              </div>;
+            })}
+          </div>
+        </div>
+      ))}
+    </div>}
     {mesi.map(mese=>{
       const nomeM=new Date(mese+"-15").toLocaleDateString("it-IT",{month:"long",year:"numeric"});
       const servMese=lista.filter(s=>s.data?.startsWith(mese));
@@ -1170,27 +1207,45 @@ function DaPagare({servizi,clienti,driver,setServizi}){
           const sf=s.statoFattura||"mancante";
           const fattColor=sf==="emessa"?"#4ade80":sf==="preparata"?"#fbbf24":"#f87171";
           const fattLabel=sf==="emessa"?"✅ Fattura emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
-          return <div key={s.id} style={{...S.card,border:pagato?"2px solid #4ade80":"1px solid #dc262444",boxShadow:pagato?"0 0 8px #4ade8066":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",opacity:pagato?0.7:1}}>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",gap:5,marginBottom:3,flexWrap:"wrap",alignItems:"center"}}>
-                <Badge color={s.tipo==="trasferimento"?"blue":"amber"}>{s.tipo==="trasferimento"?"Trasf.":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
+          return <div key={s.id} style={{...S.card,border:pagato?"2px solid #4ade80":"1px solid #dc262444",boxShadow:pagato?"0 0 8px #4ade8066":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,opacity:pagato?0.7:1}}>
+            <div style={{marginBottom:6}}>
+              <div style={{display:"flex",gap:5,marginBottom:4,flexWrap:"wrap",alignItems:"center"}}>
+                <Badge color={s.tipo==="trasferimento"?"blue":s.tipo==="ar"?"teal":s.tipo==="combinato"?"green":"amber"}>{s.tipo==="trasferimento"?"Trasf.":s.tipo==="ar"?"A/R":s.tipo==="combinato"?"Comb. "+(s.oreDisp||"?")+"h":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
                 {!noFatt&&<button onClick={()=>cycleFattura(s)} style={{background:"none",border:"1px solid "+fattColor+"44",color:fattColor,cursor:"pointer",fontSize:11,padding:"2px 8px",borderRadius:4}}>{fattLabel}</button>}
-                {pagato&&<span style={{color:"#4ade80",fontSize:11}}>✓ {s.dataPagamento}</span>}
+                {pagato&&<span style={{color:"#4ade80",fontSize:11}}>✓ {fmtD(s.dataPagamento)} · {s.metodoPagamento}</span>}
               </div>
-              <div style={{color:"#c8d3e0",fontSize:13}}>{s.data} {s.ora} — {s.nomeUtente||"—"}</div>
+              <div style={{color:"#c8d3e0",fontSize:13,fontWeight:600}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{cli?.nome} · {drv?.nome}</div>
               <div style={{color:"#8892a4",fontSize:12}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,borderTop:"1px solid #2d3550",paddingTop:6}}>
               <span style={{color:"#4ade80",fontWeight:700,fontFamily:"Georgia,serif",fontSize:16}}>{fmt(prezzoLordo(s))}</span>
-              {!pagato&&<button onClick={()=>setPagId(s.id)} style={{background:"#16a34a",border:"none",color:"white",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>Paga</button>}
+              <div style={{display:"flex",gap:6}}>
+                {!pagato&&!s.inFattura&&<button onClick={()=>toggleFattura(s)} style={{background:"#1e3050",border:"1px solid #3b82f6",color:"#60a5fa",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:600}}>+ Aggiungi</button>}
+                {!pagato&&<button onClick={()=>setPagId(s.id)} style={{background:"#16a34a",border:"none",color:"white",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>Paga</button>}
+                {pagato&&<input type="date" value={s.dataPagamento||""} onChange={e=>upd(s.id,{dataPagamento:e.target.value})} style={{background:"#0f1320",border:"1px solid #16a34a",borderRadius:4,color:"#4ade80",padding:"3px 6px",fontSize:11,cursor:"pointer"}}/>}
+                {pagato&&<button onClick={()=>setDelPagId(s.id)} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"3px 8px",cursor:"pointer",color:"#4ade80",fontSize:11}}>✓ Pagato</button>}
+              </div>
             </div>
           </div>;
         })}
       </div>;
     })}
     {mesi.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun servizio</div>}
-    {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={m=>{upd(pagId,{dataPagamento:today(),metodoPagamento:m});setPagId(null);}}/>}
+    {pagId&&<PagModal onClose={()=>setPagId(null)} onConfirm={(m,d)=>{upd(pagId,{dataPagamento:d||today(),metodoPagamento:m});setPagId(null);}}/>}
+    {delPagId&&<DelModal title="Annullare il pagamento?" onClose={()=>setDelPagId(null)} onConfirm={()=>{upd(delPagId,{dataPagamento:null,metodoPagamento:null});setDelPagId(null);}}/> }
+    {pagBulkModal&&pagBulkModal.length>0&&<PagModal onClose={()=>setPagBulkModal(null)} onConfirm={async(m,d)=>{await updPagaBulk(pagBulkModal,m,d);setPagBulkModal(null);}}/>}
+    {fattModal&&<Modal title="Data fattura" onClose={()=>setFattModal(null)}>
+      <div style={{marginBottom:14}}>
+        <div style={{color:"#8892a4",fontSize:12,marginBottom:6}}>Data emissione fattura</div>
+        <input type="date" id="fattDate" defaultValue={today()} style={{...S.inp,fontSize:16}}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+        <button style={S.bGr} onClick={()=>setFattModal(null)}>Annulla</button>
+        <button style={S.bG} onClick={()=>{const d=document.getElementById("fattDate").value||today();updBulk(fattModal,d);setFattModal(null);}}>Conferma</button>
+      </div>
+    </Modal>}
+
   </div>;
 }
 
@@ -1219,6 +1274,7 @@ function Spese({spese,setSpese,driver,anno}){
     {k:"pagamento_driver",l:"Pagamento Driver"},
     {k:"pedaggi",l:"Pedaggi Autostradali"},
     {k:"pneumatici",l:"Pneumatici"},
+    {k:"riparazione_assicurativa",l:"Riparazione Assicurativa (scoperto)"},
     {k:"vestiario",l:"Vestiario"},
   ];
   const ALIQ=[{k:"0",l:"Esente 0%"},{k:"4",l:"4%"},{k:"5",l:"5%"},{k:"10",l:"10%"},{k:"22",l:"22%"}];
@@ -1227,7 +1283,9 @@ function Spese({spese,setSpese,driver,anno}){
     if(!form.importo)return alert("Inserire importo");
     const imp=parseFloat(form.importo)||0;
     const A2=ALIQ_MAP;
-    const formFinal=(form.tipo==="inps_anno_prec"||form.tipo==="detrazioni_19"||form.tipo==="perdita_anno_prec")?{...form,aliqIva:"0"}:form;
+    const descBase=(form.descrizione||"").replace(/\s*\[IVA:[\d.]+\]/,"").trim();
+    const descrizioneFinal=(form.tipo==="riparazione_assicurativa"&&form.ivaManuale&&parseFloat(form.ivaManuale)>0)?(descBase?descBase+" ":"")+"[IVA:"+parseFloat(form.ivaManuale).toFixed(2)+"]":descBase;
+    const formFinal=(form.tipo==="inps_anno_prec"||form.tipo==="detrazioni_19"||form.tipo==="perdita_anno_prec"||form.tipo==="riparazione_assicurativa")?{...form,aliqIva:"0",descrizione:descrizioneFinal}:{...form,descrizione:descrizioneFinal};
     let voci=[{...formFinal,id:formFinal.id||uid()}];
     if(form.tipo==="acquisto_auto"&&!form.isQuota&&!form.quotaManuale){
       const aliq=A2[form.aliqIva]||0;
@@ -1283,12 +1341,13 @@ function Spese({spese,setSpese,driver,anno}){
         {isOpen&&<div style={{borderTop:"1px solid #2d3550"}}>
           {voci.map(s=>{
             const drv=driver.find(d=>d.id===s.driverId);
+            const mTag=s.descrizione?.match(/\[IVA:([\d.]+)\]/);
             const aliq=ALIQ_MAP[s.aliqIva]||0;
-            const ivaC=aliq>0?(parseFloat(s.importo)||0)*(aliq/(1+aliq)):0;
+            const ivaC=mTag?parseFloat(mTag[1]):(aliq>0?(parseFloat(s.importo)||0)*(aliq/(1+aliq)):0);
             return <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 13px",borderBottom:"1px solid #1e2435"}}>
               <div>
-                <div style={{color:"#c8d3e0",fontSize:12}}>{s.descrizione||cat.l}{s.isQuota&&<span style={{color:"#8892a4",fontSize:11}}> (quota {s.quotaNum}/{s.quotaTot})</span>}</div>
-                <div style={{color:"#8892a4",fontSize:11}}>{s.data}{drv&&" · "+drv.nome}{s.aliqIva&&s.aliqIva!=="0"&&" · IVA "+s.aliqIva+"%"}{s.note&&" · "+s.note}</div>
+                <div style={{color:"#c8d3e0",fontSize:12}}>{(s.descrizione||cat.l).replace(/\s*\[IVA:[\d.]+\]/,"")}{s.isQuota&&<span style={{color:"#8892a4",fontSize:11}}> (quota {s.quotaNum}/{s.quotaTot})</span>}</div>
+                <div style={{color:"#8892a4",fontSize:11}}>{fmtD(s.data)}{drv&&" · "+drv.nome}{s.aliqIva&&s.aliqIva!=="0"&&" · IVA "+s.aliqIva+"%"}{s.note&&" · "+s.note}</div>
                 {ivaC>0&&<div style={{color:"#4ade80",fontSize:10}}>IVA a credito: {fmt(ivaC)}</div>}
               </div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -1304,14 +1363,15 @@ function Spese({spese,setSpese,driver,anno}){
     {spese.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessuna spesa</div>}
     {delId&&<DelModal title={spese.find(x=>x.id===delId)?.isQuota?"Eliminare tutto l'ammortamento (tutte le quote)?":"Eliminare questa spesa?"} onClose={()=>setDelId(null)} onConfirm={async()=>{const sp=spese.find(x=>x.id===delId);if(sp?.isQuota){const base=sp.descrizione?.slice(0,30);const ids=spese.filter(x=>x.isQuota&&x.tipo===sp.tipo&&x.descrizione?.slice(0,30)===base).map(x=>x.id);for(const i of ids)await deleteRecord("spese",i);setSpese(p=>p.filter(x=>!ids.includes(x.id)));}else{await deleteRecord("spese",delId);setSpese(p=>p.filter(x=>x.id!==delId));}setDelId(null);}}/>}
     {modal&&<Modal title="Spesa" onClose={()=>setModal(null)}>
-      <F label="Categoria"><select style={S.inp} value={form.tipo||""} onChange={set("tipo")}><option value="">— Seleziona —</option>{CATS.map(c=><option key={c.k} value={c.k}>{c.l}</option>)}</select></F>
+      <F label="Categoria"><select style={{...S.inp,fontSize:16}} value={form.tipo||""} onChange={set("tipo")}><option value="">— Seleziona —</option>{CATS.map(c=><option key={c.k} value={c.k}>{c.l}</option>)}</select></F>
       {form.tipo==="inps_anno_prec"&&<div style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#60a5fa",fontSize:12,fontWeight:700,marginBottom:3}}>INPS anno precedente</div><div style={{color:"#c8d3e0",fontSize:11}}>Dedotta dal reddito imponibile IRPEF come costo. Aliquota IVA: 0%.</div></div>}
       {form.tipo==="perdita_anno_prec"&&<div style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#60a5fa",fontSize:12,fontWeight:700,marginBottom:3}}>Perdita anno precedente</div><div style={{color:"#c8d3e0",fontSize:11}}>Dedotta dal reddito imponibile IRPEF, inserimento manuale.</div></div>}
       {form.tipo==="detrazioni_19"&&<div style={{background:"#1a2a3a",border:"1px solid #a78bfa",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#a78bfa",fontSize:12,fontWeight:700,marginBottom:3}}>Detrazioni 19%</div><div style={{color:"#c8d3e0",fontSize:11}}>Il 19% dell&apos;importo verrà sottratto dall&apos;IRPEF lorda in Dashboard.</div></div>}
+      {form.tipo==="riparazione_assicurativa"&&<div style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:7,padding:"10px 12px",marginBottom:10}}><div style={{color:"#60a5fa",fontSize:12,fontWeight:700,marginBottom:3}}>Riparazione Assicurativa (scoperto)</div><div style={{color:"#c8d3e0",fontSize:11}}>L&apos;importo qui sotto è solo lo scoperto a tuo carico: non genera IVA automatica. Se vuoi registrare l&apos;IVA a credito della fattura del carrozziere, inseriscila più sotto a mano.</div></div>}
       {form.tipo==="acquisto_auto"&&<>
         <div style={{marginBottom:8}}><label style={{color:"#8892a4",fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={!!form.quotaManuale} onChange={e=>setForm(p=>({...p,quotaManuale:e.target.checked}))}/>Quota manuale</label></div>
         {!form.quotaManuale&&<>
-          <F label="% ammortamento annuo (max 25%)"><select style={S.inp} value={form.pctAmmort||25} onChange={e=>setForm(p=>({...p,pctAmmort:parseFloat(e.target.value)}))}>
+          <F label="% ammortamento annuo (max 25%)"><select style={{...S.inp,fontSize:16}} value={form.pctAmmort||25} onChange={e=>setForm(p=>({...p,pctAmmort:parseFloat(e.target.value)}))}>
             {[5,10,12.5,15,20,25].map(p=><option key={p} value={p}>{p}% annuo</option>)}
           </select></F>
           {imp>0&&<div style={{fontSize:11,color:"#60a5fa",marginBottom:8}}>Quota piena: {fmt(imp*(form.pctAmmort||25)/100)} · 1° e ultimo anno: {fmt(imp*(form.pctAmmort||25)/200)} · IVA a credito solo anno acquisto</div>}
@@ -1320,20 +1380,21 @@ function Spese({spese,setSpese,driver,anno}){
       {form.tipo==="beni_durevoli"&&<>
         <div style={{marginBottom:8}}><label style={{color:"#8892a4",fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input type="checkbox" checked={!!form.quotaManuale} onChange={e=>setForm(p=>({...p,quotaManuale:e.target.checked}))}/>Quota manuale</label></div>
         {!form.quotaManuale&&imp>500&&<>
-          <F label={"Anni (min "+Math.ceil(imp/500)+" per max 500/anno)"}><select style={S.inp} value={form.anniAmmort||Math.ceil(imp/500)} onChange={e=>setForm(p=>({...p,anniAmmort:parseInt(e.target.value)}))}>
+          <F label={"Anni (min "+Math.ceil(imp/500)+" per max 500/anno)"}><select style={{...S.inp,fontSize:16}} value={form.anniAmmort||Math.ceil(imp/500)} onChange={e=>setForm(p=>({...p,anniAmmort:parseInt(e.target.value)}))}>
             {[2,3,4,5,6,7,8,10].filter(a=>a>=Math.ceil(imp/500)).map(a=><option key={a} value={a}>{a} anni</option>)}
           </select></F>
           {imp>0&&<div style={{fontSize:11,color:"#60a5fa",marginBottom:8}}>Quota annua: {fmt(imp/(form.anniAmmort||Math.ceil(imp/500)))} · IVA credito solo anno acquisto</div>}
         </>}
       </>}
-      {form.tipo==="pagamento_driver"&&<F label="Driver"><select style={S.inp} value={form.driverId||""} onChange={set("driverId")}><option value="">—</option>{driver.map(d=><option key={d.id} value={d.id}>{d.nome}</option>)}</select></F>}
+      {form.tipo==="pagamento_driver"&&<F label="Driver"><select style={{...S.inp,fontSize:16}} value={form.driverId||""} onChange={set("driverId")}><option value="">—</option>{driver.map(d=><option key={d.id} value={d.id}>{d.nome}</option>)}</select></F>}
       <F label="Descrizione"><input style={S.inp} value={form.descrizione||""} onChange={set("descrizione")} placeholder={form.tipo==="altro"?"Obbligatorio":"Facoltativo"}/></F>
       <div style={{display:"flex",gap:10}}>
         <F label="Data" w="50%"><input style={S.inp} type="date" value={form.data||""} onChange={set("data")}/></F>
         <F label="Importo EUR" w="50%"><input style={S.inp} type="number" step="0.01" value={form.importo||""} onChange={e=>setForm(p=>({...p,importo:e.target.value}))}/></F>
       </div>
-      {form.tipo!=="inps_anno_prec"&&form.tipo!=="detrazioni_19"&&form.tipo!=="perdita_anno_prec"&&<>
-        <F label="Aliquota IVA (credito)"><select style={S.inp} value={form.aliqIva||"22"} onChange={set("aliqIva")}>{ALIQ.map(a=><option key={a.k} value={a.k}>{a.l}</option>)}</select></F>
+      {form.tipo==="riparazione_assicurativa"&&<F label="IVA a credito manuale (facoltativa)"><input style={S.inp} type="number" step="0.01" value={form.ivaManuale||""} onChange={set("ivaManuale")}/></F>}
+      {form.tipo!=="inps_anno_prec"&&form.tipo!=="detrazioni_19"&&form.tipo!=="perdita_anno_prec"&&form.tipo!=="riparazione_assicurativa"&&<>
+        <F label="Aliquota IVA (credito)"><select style={{...S.inp,fontSize:16}} value={form.aliqIva||"22"} onChange={set("aliqIva")}>{ALIQ.map(a=><option key={a.k} value={a.k}>{a.l}</option>)}</select></F>
         {form.aliqIva&&form.aliqIva!=="0"&&imp>0&&<div style={{fontSize:11,color:"#4ade80",marginBottom:8}}>IVA a credito: {fmt(imp*(ALIQ_MAP[form.aliqIva]||0)/(1+(ALIQ_MAP[form.aliqIva]||0)))}</div>}
       </>}
       <F label="Note"><textarea style={{...S.inp,minHeight:40,resize:"vertical"}} value={form.note||""} onChange={set("note")}/></F>
@@ -1812,15 +1873,17 @@ function Report({servizi,spese,clienti,driver,anno}){
     const srvM=srv.filter(s=>s.data?.slice(5,7)===mm);
     const spM=sp.filter(s=>s.data?.slice(5,7)===mm);
     const entrate=srvM.filter(s=>s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
+    const commissioni=srvM.reduce((a,s)=>a+(parseFloat(s.commissione)||0),0);
     const spese_tot=spM.reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
     const contanti=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="contanti").reduce((a,s)=>a+prezzoLordo(s),0);
     const bonifico=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="bonifico").reduce((a,s)=>a+prezzoLordo(s),0);
     const carta=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="carta").reduce((a,s)=>a+prezzoLordo(s),0);
     const altro=srvM.filter(s=>s.dataPagamento&&!["contanti","bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+prezzoLordo(s),0);
     const nServ=srvM.filter(s=>s.dataPagamento).length;
-    return{nome,mm,entrate,spese_tot,contanti,bonifico,carta,altro,nServ};
+    return{nome,mm,entrate,commissioni,spese_tot,contanti,bonifico,carta,altro,nServ};
   }).filter(m=>m.entrate>0||m.spese_tot>0);
   const totEntrate=mesiDati.reduce((a,m)=>a+m.entrate,0);
+  const totCommissioni=mesiDati.reduce((a,m)=>a+m.commissioni,0);
   const totSpese=mesiDati.reduce((a,m)=>a+m.spese_tot,0);
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -1869,7 +1932,12 @@ function Report({servizi,spese,clienti,driver,anno}){
       <div style={{...S.card,border:"1px solid #4ade8044",textAlign:"center"}}>
         <div style={{color:"#4ade80",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>Totale Entrate</div>
         <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:26,fontWeight:700}}>{fmt(totEntrate)}</div>
+        {totCommissioni>0&&<div style={{color:"#4ade80",fontSize:11,marginTop:4}}>Netto commissioni: {fmt(totEntrate-totCommissioni)}</div>}
       </div>
+      {totCommissioni>0&&<div style={{...S.card,border:"1px solid #a78bfa44",textAlign:"center"}}>
+        <div style={{color:"#a78bfa",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>Commissioni</div>
+        <div style={{color:"#a78bfa",fontFamily:"Georgia,serif",fontSize:26,fontWeight:700}}>-{fmt(totCommissioni)}</div>
+      </div>}
       <div style={{...S.card,border:"1px solid #f8717144",textAlign:"center"}}>
         <div style={{color:"#f87171",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>Totale Spese</div>
         <div style={{color:"#f87171",fontFamily:"Georgia,serif",fontSize:26,fontWeight:700}}>{fmt(totSpese)}</div>
@@ -1896,8 +1964,52 @@ function Report({servizi,spese,clienti,driver,anno}){
     {mesiDati.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun dato per questo periodo</div>}
   </div>;
 }
+function Login({onLogin}){
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [err,setErr]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [showPwd,setShowPwd]=useState(false);
+  const accedi=async()=>{
+    setLoading(true);setErr("");
+    const{error}=await supa.auth.signInWithPassword({email,password});
+    if(error){setErr("Email o password errati");setLoading(false);}
+    else onLogin();
+  };
+  return <div style={{minHeight:"100vh",background:"#0a0d1a",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"#1a1f2e",border:"1px solid #2d3550",borderRadius:16,padding:"40px 32px",width:"100%",maxWidth:380}}>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <div style={{color:"#e8d5a3",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,letterSpacing:2,marginBottom:4}}>BLACK DIAMOND TRANSFERT</div>
+        <div style={{color:"#8892a4",fontSize:13,letterSpacing:1}}>Gestionale NCC</div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <div style={{color:"#8892a4",fontSize:12,marginBottom:6}}>Email</div>
+        <input style={{width:"100%",background:"#0f1320",border:"1px solid #2d3550",borderRadius:6,color:"#e2e8f0",padding:"10px 12px",fontSize:15,fontFamily:"inherit",boxSizing:"border-box"}} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="email@esempio.com" onKeyDown={e=>e.key==="Enter"&&accedi()} autoComplete="username"/>
+      </div>
+      <div style={{marginBottom:24}}>
+        <div style={{color:"#8892a4",fontSize:12,marginBottom:6}}>Password</div>
+        <div style={{position:"relative"}}><input style={{width:"100%",background:"#0f1320",border:"1px solid #2d3550",borderRadius:6,color:"#e2e8f0",padding:"10px 40px 10px 12px",fontSize:15,fontFamily:"inherit",boxSizing:"border-box"}} type={showPwd?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&accedi()} autoComplete="current-password"/><button type="button" onClick={()=>setShowPwd(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"#8892a4",fontSize:16}}>{showPwd?"🙈":"👁"}</button></div>
+      </div>
+      {err&&<div style={{color:"#f87171",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+      <div style={{textAlign:"center",marginBottom:16}}><button type="button" onClick={async()=>{if(!email){setErr("Inserisci prima la tua email");return;}const{error}=await supa.auth.resetPasswordForEmail(email,{redirectTo:"https://gestionale.blackdiamondtransfert.it"});if(error)setErr("Errore: "+error.message);else setErr("✓ Email di reset inviata — controlla la tua casella");}} style={{background:"none",border:"none",color:"#8892a4",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Password dimenticata?</button></div>
+      <button onClick={accedi} disabled={loading} style={{width:"100%",background:"#e8d5a3",border:"none",color:"#0a0d1a",borderRadius:8,padding:"12px",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"Georgia,serif",letterSpacing:1}}>{loading?"Accesso in corso...":"Accedi"}</button>
+    </div>
+  </div>;
+}
 export default function App(){
-  const [page,setPage]=useState("home");
+  const [sessione,setSessione]=useState(null);
+  const [checkSess,setCheckSess]=useState(false);
+  useEffect(()=>{
+    supa.auth.getSession().then(({data:{session}})=>{setSessione(session);setCheckSess(true);});
+    const{data:{subscription}}=supa.auth.onAuthStateChange((_,session)=>setSessione(session));
+    return()=>subscription.unsubscribe();
+  },[]);
+  if(!checkSess)return <div style={{minHeight:"100vh",background:"#0a0d1a"}}/>;
+  if(!sessione)return <Login onLogin={()=>supa.auth.getSession().then(({data:{session}})=>setSessione(session))}/>;
+  return <AppContent/>;
+}
+function AppContent(){
+  const [page,setPage]=useState("servizi");
   const [clienti,setClientiR]=useState([]);
   const [driver,setDriverR]=useState([]);
   const [servizi,setServiziR]=useState([]);
@@ -1988,12 +2100,11 @@ export default function App(){
   const daPagare=srvF.filter(s=>!s.dataPagamento).length;
 
   const NAV=[
-    {id:"home",l:"Home",i:"home"},
-    {id:"calendario",l:"Calendario",i:"cal"},
     {id:"servizi",l:"Servizi",i:"list"},
-    {id:"fatturazione",l:"Fatturazione",i:"fatt"},
+    {id:"calendario",l:"Calendario",i:"cal"},
     {id:"dapagare",l:"Da Pagare",i:"clk",badge:daPagare},
     {id:"spese",l:"Spese",i:"eur"},
+    {id:"home",l:"Home",i:"home"},
     {id:"preventivi",l:"Preventivi",i:"fatt"},
     {id:"clienti",l:"Committenti",i:"users"},
     {id:"driver",l:"Driver",i:"car",badge:alerts.length},
@@ -2030,17 +2141,19 @@ export default function App(){
       <span style={{color:"#60a5fa",fontSize:12}}>Anno {anno}</span>
       <button onClick={()=>setAnno("tutti")} style={{marginLeft:"auto",background:"none",border:"1px solid #3b82f644",borderRadius:4,color:"#60a5fa",fontSize:11,padding:"1px 8px",cursor:"pointer"}}>Mostra tutti</button>
     </div>}
-    <div style={S.nav}>
+    <div style={{...S.nav,justifyContent:"space-between"}}>
+      <div style={{display:"flex",overflowX:"auto"}}>
       {NAV.map(n=><button key={n.id} onClick={()=>setPage(n.id)} style={{background:"none",border:"none",borderBottom:"2px solid "+(page===n.id?"#e8d5a3":"transparent"),color:page===n.id?"#ffffff":"#a0aec0",fontWeight:page===n.id?700:400,padding:"9px 11px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontSize:15,whiteSpace:"nowrap"}}>
         <Ic n={n.i} z={13}/>{n.l}
         {n.badge>0&&<span style={{background:"#dc2626",color:"white",borderRadius:10,padding:"1px 5px",fontSize:10,fontWeight:700}}>{n.badge}</span>}
       </button>)}
+      </div>
+      <button onClick={()=>supa.auth.signOut()} style={{background:"none",border:"none",color:"#6b7280",fontSize:12,cursor:"pointer",padding:"9px 11px",whiteSpace:"nowrap",flexShrink:0}}>Esci</button>
     </div>
     <div style={S.cnt}>
       {page==="home"&&<Home servizi={srvF} spese={spF} anno={anno} tutteSpese={spese}/>}
       {page==="calendario"&&<Calendario servizi={servizi} setServizi={setServizi} driver={driver}/>}
       {page==="servizi"&&<Servizi servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver} anno={anno}/>}
-      {page==="fatturazione"&&<Fatturazione servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver}/>}
       {page==="dapagare"&&<DaPagare servizi={srvF} clienti={clienti} driver={driver} setServizi={setServizi}/>}
       {page==="spese"&&<Spese spese={spF} setSpese={setSpese} driver={driver} anno={anno}/>}
       {page==="preventivi"&&<Preventivi refreshTick={refreshTick}/>}
