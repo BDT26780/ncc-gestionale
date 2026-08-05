@@ -16,3 +16,11 @@ if ("serviceWorker" in navigator) {
       .catch((err) => console.error("SW errore:", err));
   });
 }
+document.addEventListener("focusout", () => {
+  setTimeout(() => {
+    const vv = window.visualViewport;
+    if (vv && vv.offsetTop > 0 && !document.activeElement?.matches("input,textarea,select")) {
+      window.scrollBy(0, -vv.offsetTop);
+    }
+  }, 250);
+});
