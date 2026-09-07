@@ -560,7 +560,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       const col=dcol(s.driverId,driver);
       return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.noShow?"2px solid #00d4ff":s.dataPagamento?"2px solid #4ade80":`1px solid #2d3550`,boxShadow:s.noShow?"0 0 8px #00d4ff66":s.dataPagamento?"0 0 8px #4ade8066":undefined,background:s.noShow?"#00d4ff1a":s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
         {inline!==s.id?<div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div style={{flex:1,minWidth:170}}>
               <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:4}}>
                 <span style={{color:"#e8d5a3",fontFamily:"monospace",fontSize:11}}>{s.id}</span>
