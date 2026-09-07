@@ -510,13 +510,14 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   const lastTap=useRef(0);
   const MT=["contanti","bonifico","carta","mypos","paypal"];
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
-  const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",passeggeri:"passeggeri",bagagli:"bagagli",dataFattura:"data_fattura",statoFattura:"stato_fattura",inFattura:"in_fattura",commissione:"commissione",metodoCommissione:"metodo_commissione",gruppoFattura:"gruppo_fattura"}[k]||k,v]))).eq("id",id).then(({error})=>{if(error)console.error("Errore salvataggio servizio:",error);});};
+  const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",passeggeri:"passeggeri",bagagli:"bagagli",dataFattura:"data_fattura",statoFattura:"stato_fattura",inFattura:"in_fattura",commissione:"commissione",metodoCommissione:"metodo_commissione",gruppoFattura:"gruppo_fattura",noShow:"no_show"}[k]||k,v]))).eq("id",id).then(({error})=>{if(error)console.error("Errore salvataggio servizio:",error);});};
   const submit=()=>{
     if(!form.data)return alert("Inserire la data");
     setServizi(p=>{const ex=p.find(s=>s.id===form.id);return ex?p.map(s=>s.id===form.id?form:s):[...p,form]});
     setModal(null);
   };
   const [fattServId,setFattServId]=useState(null);
+  const [noShowId,setNoShowId]=useState(null);
   const [confMancanteId,setConfMancanteId]=useState(null);
   const [mostraTutti,setMostraTutti]=useState(false);
   const [dataFiltro,setDataFiltro]=useState(today());
@@ -557,7 +558,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       const drv=driver.find(d=>d.id===s.driverId);
       const cli=clienti.find(c=>c.id===s.committenteId);
       const col=dcol(s.driverId,driver);
-      return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.dataPagamento?"2px solid #4ade80":`1px solid #2d3550`,boxShadow:s.dataPagamento?"0 0 8px #4ade8066":undefined,background:s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
+      return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.noShow?"2px solid #00d4ff":s.dataPagamento?"2px solid #4ade80":`1px solid #2d3550`,boxShadow:s.noShow?"0 0 8px #00d4ff66":s.dataPagamento?"0 0 8px #4ade8066":undefined,background:s.noShow?"#00d4ff1a":s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
         {inline!==s.id?<div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
             <div style={{flex:1,minWidth:170}}>
@@ -593,6 +594,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
                   ?<button onClick={()=>setPagId(s.id)} style={{background:"#2d3550",border:"1px solid #3d4a60",borderRadius:4,padding:"6px 12px",color:"#8892a4",cursor:"pointer",fontSize:13}}>💳 Paga</button>
                   :<button onClick={()=>upd(s.id,{dataPagamento:null,metodoPagamento:null})} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"6px 12px",color:"#4ade80",cursor:"pointer",fontSize:13}}>✓ {s.metodoPagamento} ✕</button>
                 }
+                {!s.noShow?<button onClick={()=>setNoShowId(s.id)} style={{background:"#0e3a4a",border:"1px solid #00d4ff88",borderRadius:4,padding:"6px 12px",color:"#00d4ff",cursor:"pointer",fontSize:13,fontWeight:700}}>🔵 NO SHOW</button>:<button onClick={()=>upd(s.id,{noShow:false})} style={{background:"#00d4ff22",border:"1px solid #00d4ff",borderRadius:4,padding:"6px 12px",color:"#00d4ff",cursor:"pointer",fontSize:13,fontWeight:700}}>🔵 NO SHOW ✕</button>}
                 <button onClick={()=>setInline(s.id)} style={{...S.bGr,padding:"6px 12px"}}><Ic n="edt" z={14}/></button>
                 <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"6px 12px",color:"#25d366",cursor:"pointer",fontSize:13,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
                 {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"6px 12px",color:"#86efac",cursor:"pointer",fontSize:13,fontWeight:700}}>WA Pass.</button>}
@@ -657,6 +659,16 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       </div>
     </Modal>}
     {confMancanteId&&<DelModal title="Vuoi tornare a Mancante?" onClose={()=>setConfMancanteId(null)} onConfirm={()=>{upd(confMancanteId,{statoFattura:"mancante",dataFattura:null});setConfMancanteId(null);}}/>}
+    {noShowId&&<Modal title="Segna NO SHOW" onClose={()=>setNoShowId(null)}>
+      <div style={{marginBottom:14}}>
+        <div style={{color:"#8892a4",fontSize:12,marginBottom:6}}>Nuovo importo (es. penale di cancellazione)</div>
+        <input type="number" step="0.01" id="noShowPrice" defaultValue={servizi.find(s=>s.id===noShowId)?.prezzo||""} style={{...S.inp,fontSize:16}}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+        <button style={S.bGr} onClick={()=>setNoShowId(null)}>Annulla</button>
+        <button style={S.bG} onClick={()=>{const p=document.getElementById("noShowPrice").value;upd(noShowId,{noShow:true,prezzo:p});setNoShowId(null);}}>Conferma</button>
+      </div>
+    </Modal>}
 
     {cartelloPass&&<div
       style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#000",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"space-evenly",gap:0,padding:"20px 40px"}}
@@ -872,7 +884,7 @@ function Calendario({servizi,setServizi,driver}){
 function DaPagare({servizi,clienti,driver,setServizi}){
   const [filtroC,setFiltroC]=useState("");
   const [pagId,setPagId]=useState(null);
-  const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura",inFattura:"in_fattura",commissione:"commissione",metodoCommissione:"metodo_commissione",gruppoFattura:"gruppo_fattura"}[k]||k,v]))).eq("id",id).then(({error})=>{if(error)console.error("Errore salvataggio servizio:",error);});};
+  const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura",inFattura:"in_fattura",commissione:"commissione",metodoCommissione:"metodo_commissione",gruppoFattura:"gruppo_fattura",noShow:"no_show"}[k]||k,v]))).eq("id",id).then(({error})=>{if(error)console.error("Errore salvataggio servizio:",error);});};
   const toggleFattura=async(s)=>{
     if(s.inFattura){setServizi(p=>p.map(x=>x.id===s.id?{...x,inFattura:false,gruppoFattura:null}:x));await supa.from("servizi").update({in_fattura:false,gruppo_fattura:null}).eq("id",s.id);return;}
     const aperti=servizi.filter(x=>x.inFattura&&x.committenteId===s.committenteId&&x.statoFattura!=="emessa"&&x.gruppoFattura);
@@ -932,7 +944,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
               const fattLabel=sf==="emessa"?"✅ Emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
               const pagato=!!s.dataPagamento;
               const scaduto=!pagato&&s.data&&(new Date()-new Date(s.data+"T00:00:00"))/86400000>30;
-              return <div key={s.id} style={{padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:pagato?"1px solid #4ade8033":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
+              return <div key={s.id} style={{padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:s.noShow?"3px solid #00d4ff":pagato?"1px solid #4ade8033":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
                 <div style={{marginBottom:5}}>
                   <div style={{color:"#c8d3e0",fontSize:13}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
                   <div style={{color:"#8892a4",fontSize:12}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
@@ -978,7 +990,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
                 const fattLabel=sf==="emessa"?"✅ Emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
                 const pagato=!!s.dataPagamento;
                 const scaduto=!pagato&&s.data&&(new Date()-new Date(s.data+"T00:00:00"))/86400000>30;
-                return <div key={s.id} style={{padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:pagato?"1px solid #4ade8033":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
+                return <div key={s.id} style={{padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:s.noShow?"3px solid #00d4ff":pagato?"1px solid #4ade8033":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
                   <div style={{marginBottom:5}}>
                     <div style={{color:"#c8d3e0",fontSize:13}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
                     <div style={{color:"#8892a4",fontSize:12}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
@@ -1007,7 +1019,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
           const fattLabel=sf==="emessa"?"✅ Fattura emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
           const scaduto=!pagato&&s.data&&(new Date()-new Date(s.data+"T00:00:00"))/86400000>30;
           const giallo=!pagato&&!s.inFattura&&sf==="preparata";
-          return <div key={s.id} style={{...S.card,border:pagato?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":giallo?"3px solid #fbbf24":"1px solid #dc262444",boxShadow:pagato?"0 0 8px #4ade8066":scaduto?"0 0 10px #ff1a1a66":giallo?"0 0 8px #fbbf2466":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,opacity:pagato?0.7:1}}>
+          return <div key={s.id} style={{...S.card,border:s.noShow?"3px solid #00d4ff":pagato?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":giallo?"3px solid #fbbf24":"1px solid #dc262444",boxShadow:s.noShow?"0 0 10px #00d4ff66":pagato?"0 0 8px #4ade8066":scaduto?"0 0 10px #ff1a1a66":giallo?"0 0 8px #fbbf2466":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,opacity:pagato?0.7:1}}>
             <div style={{marginBottom:6}}>
               <div style={{display:"flex",gap:5,marginBottom:4,flexWrap:"wrap",alignItems:"center"}}>
                 <Badge color={s.tipo==="trasferimento"?"blue":s.tipo==="ar"?"teal":s.tipo==="combinato"?"green":"amber"}>{s.tipo==="trasferimento"?"Trasf.":s.tipo==="ar"?"A/R":s.tipo==="combinato"?"Comb. "+(s.oreDisp||"?")+"h":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
