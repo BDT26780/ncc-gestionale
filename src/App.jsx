@@ -558,7 +558,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
       const drv=driver.find(d=>d.id===s.driverId);
       const cli=clienti.find(c=>c.id===s.committenteId);
       const col=dcol(s.driverId,driver);
-      return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.noShow?"2px solid #00d4ff":s.dataPagamento?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":`1px solid #2d3550`,boxShadow:s.noShow?"0 0 8px #00d4ff66":s.dataPagamento?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":undefined,background:s.noShow?"#00d4ff1a":s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
+      return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.noShow?"2px solid #00d4ff":s.dataPagamento?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":s.statoFattura==="preparata"?"2px solid #fbbf24":`1px solid #2d3550`,boxShadow:s.noShow?"0 0 8px #00d4ff66":s.dataPagamento?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":s.statoFattura==="preparata"?"0 0 8px #fbbf2466":undefined,background:s.noShow?"#00d4ff1a":s.dataPagamento?"#0d2a1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
         {inline!==s.id?<div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div style={{flex:1,minWidth:170}}>
