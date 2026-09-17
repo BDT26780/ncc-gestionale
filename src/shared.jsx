@@ -143,7 +143,7 @@ export const S={
   nav:{background:"#121827",borderBottom:"1px solid #1e2d45",display:"flex",overflowX:"auto",padding:"0 14px"},
   cnt:{padding:"18px 14px",maxWidth:1200,margin:"0 auto"},
   card:{background:"#1a1f2e",border:"1px solid #2d3550",borderRadius:8,padding:"11px 13px",marginBottom:8},
-  inp:{width:"100%",background:"#0f1320",border:"1px solid #2d3550",borderRadius:6,color:"#e2e8f0",padding:"7px 10px",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"},
+  inp:{width:"100%",minWidth:0,maxWidth:"100%",background:"#0f1320",border:"1px solid #2d3550",borderRadius:6,color:"#e2e8f0",padding:"7px 10px",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"},
   bG:{background:"#e8d5a3",color:"#0f1320",border:"none",borderRadius:6,padding:"7px 14px",cursor:"pointer",fontWeight:700,display:"flex",alignItems:"center",gap:5},
   bGr:{background:"#2d3550",border:"none",color:"#8892a4",borderRadius:6,padding:"7px 14px",cursor:"pointer"},
   bR:{background:"#3d1515",border:"none",color:"#f87171",borderRadius:4,padding:"4px 7px",cursor:"pointer"},
