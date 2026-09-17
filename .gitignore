@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 src/App.jsx.backup*
+
+# file di backup locali
+*.backup*
