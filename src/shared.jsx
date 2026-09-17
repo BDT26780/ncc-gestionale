@@ -275,7 +275,7 @@ export const PagModal=({onClose,onConfirm})=>{
 };
 
 export const F=({label,children,w})=>(
-  <div style={{marginBottom:11,width:w||"100%"}}>
+  <div style={{marginBottom:11,width:w||"100%",flexShrink:1,minWidth:0,boxSizing:"border-box"}}>
     <label style={S.lbl}>{label}</label>{children}
   </div>
 );
