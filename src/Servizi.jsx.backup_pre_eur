@@ -1,7 +1,8 @@
 import React,{useState,useRef} from "react";
-import {eur,S,Ic,Badge,Modal,DelModal,F,fmt,fmtD,dcol,ivaS,prezzoLordo,uid,today,deleteRecord,SwipeToDelete,PagModal,supa} from "./shared.jsx";
+import {S,Ic,Badge,Modal,DelModal,F,fmt,fmtD,dcol,ivaS,prezzoLordo,uid,today,deleteRecord,SwipeToDelete,PagModal,supa} from "./shared.jsx";
 
 // ── WHATSAPP ──────────────────────────────────────────────────────────────────
+const eur=String.fromCharCode(8364);
 function msgDriver(s,drv){
   const dataFmt=s.data?new Date(s.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"Non specificata";
   const tipo=s.tipo==="disposizione"?"Disposizione oraria "+(s.oreDisp||1)+"h":"Trasferimento";

@@ -1,5 +1,5 @@
 import{useState,useEffect}from"react";
-import{eur,S,Ic,Modal,DelModal,F,fmt,uid,today,supa}from"./shared.jsx";
+import{S,Ic,Modal,DelModal,F,fmt,uid,today,supa}from"./shared.jsx";
 
 // ── PREVENTIVI ────────────────────────────────────────────────────────────────
 const AZIENDA={

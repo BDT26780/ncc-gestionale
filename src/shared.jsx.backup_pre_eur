@@ -122,7 +122,6 @@ export const deleteRecord=async(table,id)=>{
 };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-export const eur=String.fromCharCode(8364);
 export const uid=()=>String(Math.floor(100000+Math.random()*900000));
 export const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n||0);
 export const fmtD=d=>{if(!d)return"—";const p=d.slice(0,10).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:d;};
