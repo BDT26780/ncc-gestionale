@@ -6,6 +6,7 @@ import Preventivi from "./Preventivi.jsx";
 import Spese from "./Spese.jsx";
 import Servizi from "./Servizi.jsx";
 import Calendario from "./Calendario.jsx";
+import logoBDT from "./bdt-logo.png";
 // ── IVA TRIMESTRALE ───────────────────────────────────────────────────────────
 const TRIM=[
   {label:"1° Trim.",months:[1,2,3],scad:"16 Maggio"},
@@ -567,8 +568,9 @@ function Login({onLogin}){
   return <div style={{minHeight:"100vh",background:"#0a0d1a",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{background:"#1a1f2e",border:"1px solid #2d3550",borderRadius:16,padding:"40px 32px",width:"100%",maxWidth:380}}>
       <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{color:"#e8d5a3",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,letterSpacing:2,marginBottom:4}}>BLACK DIAMOND TRANSFERT</div>
-        <div style={{color:"#8892a4",fontSize:13,letterSpacing:1}}>Gestionale NCC</div>
+        <img src={logoBDT} alt="BDT" style={{height:96,width:"auto",display:"block",margin:"0 auto 14px"}}/>
+        <div style={{fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,letterSpacing:2,marginBottom:4,backgroundImage:"linear-gradient(180deg,#f8e9b6 0%,#e0b84e 40%,#c08f22 70%,#8a6212 100%)",WebkitBackgroundClip:"text",backgroundClip:"text",WebkitTextFillColor:"transparent",display:"inline-block"}}>BLACK DIAMOND TRANSFERT</div>
+        <div style={{color:"#a8b2c4",fontSize:13,letterSpacing:1}}>Gestionale NCC</div>
       </div>
       <div style={{marginBottom:16}}>
         <div style={{color:"#8892a4",fontSize:12,marginBottom:6}}>Email</div>
@@ -707,10 +709,10 @@ function AppContent(){
   return <div style={S.pg}>
     <div style={S.hdr}>
       <div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 0"}}>
-        <span style={{fontSize:20}}>&#128664;</span>
+        <img src={logoBDT} alt="BDT" style={{height:46,width:"auto",display:"block"}}/>
         <div>
-          <div style={{...S.gld,fontSize:15,fontWeight:700,letterSpacing:0.5}}>NCC Gestionale</div>
-          <div style={{color:"#4b6080",fontSize:10,letterSpacing:2,textTransform:"uppercase"}}>Noleggio Con Conducente</div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,letterSpacing:0.5,backgroundImage:"linear-gradient(180deg,#f8e9b6 0%,#e0b84e 40%,#c08f22 70%,#8a6212 100%)",WebkitBackgroundClip:"text",backgroundClip:"text",WebkitTextFillColor:"transparent",display:"inline-block"}}>BDT Gestionale</div>
+          <div style={{color:"#f0f2f5",fontSize:10,letterSpacing:2,textTransform:"uppercase",textShadow:"0 1px 2px #000,0 0 3px #0008"}}>Noleggio Con Conducente</div>
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 0",flexWrap:"wrap"}}>
