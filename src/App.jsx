@@ -271,6 +271,7 @@ function Home({servizi,spese,anno,tutteSpese}){
 function DaPagare({servizi,clienti,driver,setServizi}){
   const [filtroC,setFiltroC]=useState("");
   const [pagId,setPagId]=useState(null);
+  const [pagAperti,setPagAperti]=useState({});
   const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",dataFattura:"data_fattura",statoFattura:"stato_fattura",inFattura:"in_fattura",commissione:"commissione",metodoCommissione:"metodo_commissione",gruppoFattura:"gruppo_fattura",noShow:"no_show"}[k]||k,v]))).eq("id",id).then(({error})=>{if(error)console.error("Errore salvataggio servizio:",error);});};
   const toggleFattura=async(s)=>{
     if(s.inFattura){setServizi(p=>p.map(x=>x.id===s.id?{...x,inFattura:false,gruppoFattura:null}:x));await supa.from("servizi").update({in_fattura:false,gruppo_fattura:null}).eq("id",s.id);return;}
@@ -357,6 +358,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
       const nonPagati=servMese.filter(s=>!s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
       const pagati=servMese.filter(s=>s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
       const gruppiMese=perCli.filter(g=>meseGruppo(g)<oggiMese&&meseGruppo(g)===mese);
+      const totPag=pagati.reduce((a,s)=>a+prezzoLordo(s),0);const togglePag=<div onClick={()=>setPagAperti(p=>({...p,[mese]:!p[mese]}))} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0d2a1a",border:"1px solid #4ade8055",borderRadius:8,padding:"10px 12px",marginBottom:8,cursor:"pointer",color:"#4ade80",fontSize:13}}><span>✓ Pagati · {pagati.length} {pagati.length===1?"servizio":"servizi"}</span><span>{fmt(totPag)} € {pagAperti[mese]?"▾":"▸"}</span></div>;
       return <div key={mese} style={{marginBottom:20}}>
         <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:2,marginBottom:8,borderBottom:"1px solid #2d3550",paddingBottom:6}}>{nomeM}</div>
         {gruppiMese.map(({gid,cli,ss,chiuso,tot:totG})=>(
@@ -396,7 +398,8 @@ function DaPagare({servizi,clienti,driver,setServizi}){
             </div>
           </div>
         ))}
-        {[...nonPagati,...pagati].map(s=>{
+        {[...nonPagati,...pagati].map((s,idx)=>{
+          const primoPag=pagati.length>0&&idx===nonPagati.length;if(s.dataPagamento&&!pagAperti[mese])return primoPag?<React.Fragment key={"tg"+mese}>{togglePag}</React.Fragment>:null;
           const drv=driver.find(d=>d.id===s.driverId);
           const cli=clienti.find(c=>c.id===s.committenteId);
           const pagato=!!s.dataPagamento;
@@ -406,7 +409,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
           const fattLabel=sf==="emessa"?"✅ Fattura emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
           const scaduto=!pagato&&s.data&&(new Date()-new Date(s.data+"T00:00:00"))/86400000>30;
           const giallo=!pagato&&!s.inFattura&&sf==="preparata";
-          return <div key={s.id} style={{...S.card,border:s.noShow?"3px solid #00d4ff":pagato?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":giallo?"3px solid #fbbf24":"1px solid #dc262444",boxShadow:s.noShow?"0 0 10px #00d4ff66":pagato?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":scaduto?"0 0 10px #ff1a1a66":giallo?"0 0 8px #fbbf2466":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,opacity:pagato?0.7:1}}>
+          return <React.Fragment key={s.id}>{primoPag?togglePag:null}<div key={s.id} style={{...S.card,border:s.noShow?"3px solid #00d4ff":pagato?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":giallo?"3px solid #fbbf24":"1px solid #dc262444",boxShadow:s.noShow?"0 0 10px #00d4ff66":pagato?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":scaduto?"0 0 10px #ff1a1a66":giallo?"0 0 8px #fbbf2466":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,opacity:pagato?0.7:1}}>
             <div style={{marginBottom:6}}>
               <div style={{display:"flex",gap:5,marginBottom:4,flexWrap:"wrap",alignItems:"center"}}>
                 <Badge color={s.tipo==="trasferimento"?"blue":s.tipo==="ar"?"teal":s.tipo==="combinato"?"green":"amber"}>{s.tipo==="trasferimento"?"Trasf.":s.tipo==="ar"?"A/R":s.tipo==="combinato"?"Comb. "+(s.oreDisp||"?")+"h":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
@@ -426,7 +429,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
                 {pagato&&<button onClick={()=>setDelPagId(s.id)} style={{background:"#16a34a22",border:"1px solid #16a34a",borderRadius:4,padding:"3px 8px",cursor:"pointer",color:"#4ade80",fontSize:11}}>✓ Pagato</button>}
               </div>
             </div>
-          </div>;
+          </div></React.Fragment>;
         })}
       </div>;
     })}
