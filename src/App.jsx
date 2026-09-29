@@ -25,7 +25,49 @@ const calcIRPEF=base=>{
 };
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
+function FatturatoMensile({servizi,anno,setVista}){
+  const [apertoMese,setApertoMese]=useState(null);
+  const dati=useMemo(()=>{
+    const filtrati=anno&&anno!=="tutti"?servizi.filter(s=>(s.data||"").slice(0,4)===anno):servizi;
+    const mesiMap={};
+    filtrati.forEach(s=>{
+      if(!s.data)return;
+      const m=s.data.slice(0,7);
+      if(!mesiMap[m])mesiMap[m]={mese:m,totale:0,nonIncassato:0,tracciato:0,nonTracciato:0,nonPagati:[]};
+      const importo=prezzoLordo(s);
+      mesiMap[m].totale+=importo;
+      if(!s.dataPagamento){mesiMap[m].nonIncassato+=importo;mesiMap[m].nonPagati.push(s);}
+      else if(["bonifico","carta"].includes(s.metodoPagamento)){mesiMap[m].tracciato+=importo;}
+      else{mesiMap[m].nonTracciato+=importo;}
+    });
+    return Object.values(mesiMap).sort((a,b)=>b.mese.localeCompare(a.mese));
+  },[servizi,anno]);
+
+  return <div>
+    <button onClick={()=>setVista("dashboard")} style={{...S.bGr,marginBottom:12}}>← Torna a Dashboard</button>
+    <h2 style={{...S.gld,marginTop:0}}>Fatturato diviso per mesi {anno!=="tutti"&&<span style={{fontSize:14,color:"#60a5fa"}}>— {anno}</span>}</h2>
+    {dati.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun servizio</div>}
+    {dati.map(m=>{
+      const nomeM=new Date(m.mese+"-15").toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+      const aperto=apertoMese===m.mese;
+      return <div key={m.mese} style={{...S.card,marginBottom:12}}>
+        <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>{nomeM}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
+          <div><div style={{fontSize:11,color:"#8892a4",marginBottom:3}}>Totale mese</div><div style={{color:"#e8d5a3",fontSize:18,fontFamily:"Georgia,serif",fontWeight:700}}>{fmt(m.totale)}</div></div>
+          <div onClick={()=>m.nonPagati.length&&setApertoMese(aperto?null:m.mese)} style={{cursor:m.nonPagati.length?"pointer":"default"}}><div style={{fontSize:11,color:"#8892a4",marginBottom:3}}>Non incassato {m.nonPagati.length>0&&(aperto?"▾":"▸")}</div><div style={{color:"#f87171",fontSize:18,fontFamily:"Georgia,serif",fontWeight:700}}>{fmt(m.nonIncassato)}</div></div>
+          <div><div style={{fontSize:11,color:"#8892a4",marginBottom:3}}>Tracciato</div><div style={{color:"#4ade80",fontSize:18,fontFamily:"Georgia,serif",fontWeight:700}}>{fmt(m.tracciato)}</div></div>
+          <div><div style={{fontSize:11,color:"#8892a4",marginBottom:3}}>Non tracciato</div><div style={{color:"#60a5fa",fontSize:18,fontFamily:"Georgia,serif",fontWeight:700}}>{fmt(m.nonTracciato)}</div></div>
+        </div>
+        {aperto&&<div style={{marginTop:12,borderTop:"1px solid #2d3550",paddingTop:10}}>
+          {m.nonPagati.sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1).map(s=><div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2d355033",fontSize:13}}><span style={{color:"#8892a4"}}>{fmtD(s.data)} · {(s.pickup||"—")+" → "+(s.dropoff||"—")}</span><span style={{color:"#f87171",fontWeight:600}}>{fmt(prezzoLordo(s))}</span></div>)}
+        </div>}
+      </div>;
+    })}
+  </div>;
+}
+
 function Home({servizi,spese,anno,tutteSpese}){
+  const [vista,setVista]=useState("dashboard");
   const [showSpeseDett,setShowSpeseDett]=useState(false);
   const [ivaRiportata,setIvaRiportata]=useState(0);
   useEffect(()=>{if(anno&&anno!=="tutti"){supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single().then(({data})=>{const r=data?.iva_credito_riportato||{};const annoPrev=String(parseInt(anno)-1);setIvaRiportata(parseFloat(r[annoPrev])||0);});}},[anno]);
@@ -105,8 +147,9 @@ function Home({servizi,spese,anno,tutteSpese}){
   </div>;
   const Big=({val,col})=><div style={{color:col||"#e8d5a3",fontSize:24,fontFamily:"Georgia,serif",fontWeight:700,marginBottom:8}}>{fmt(val)}</div>;
 
-  return <div>
+  return <div>{vista==="dashboard"?<>
     <h2 style={{...S.gld,marginTop:0}}>Dashboard {anno!=="tutti"&&<span style={{fontSize:14,color:"#60a5fa"}}>— {anno}</span>}</h2>
+    <div style={{display:"flex",gap:8,marginBottom:16}}><button onClick={()=>setVista("dashboard")} style={vista==="dashboard"?S.bG:S.bGr}>Dashboard</button><button onClick={()=>setVista("fatturato")} style={vista==="fatturato"?S.bG:S.bGr}>Fatturato</button></div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))",gap:12}}>
       <Card title="Entrate totali" col="#e8d5a3">
         <Big val={st.totCommissioni>0?st.tot-st.totCommissioni:st.tot}/>
@@ -263,7 +306,7 @@ function Home({servizi,spese,anno,tutteSpese}){
         </div>;
       })}
     </div>}
-  </div>;
+  </>:<FatturatoMensile servizi={servizi} anno={anno} setVista={setVista}/>}</div>;
 }
 
 // ── FATTURAZIONE ──────────────────────────────────────────────────────────────
@@ -358,7 +401,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
       const nonPagati=servMese.filter(s=>!s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
       const pagati=servMese.filter(s=>s.dataPagamento).sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1);
       const gruppiMese=perCli.filter(g=>meseGruppo(g)<oggiMese&&meseGruppo(g)===mese);
-      const totPag=pagati.reduce((a,s)=>a+prezzoLordo(s),0);const togglePag=<div onClick={()=>setPagAperti(p=>({...p,[mese]:!p[mese]}))} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0d2a1a",border:"1px solid #4ade8055",borderRadius:8,padding:"10px 12px",marginBottom:8,cursor:"pointer",color:"#4ade80",fontSize:13}}><span>✓ Pagati · {pagati.length} {pagati.length===1?"servizio":"servizi"}</span><span>{fmt(totPag)} € {pagAperti[mese]?"▾":"▸"}</span></div>;
+      const totPag=pagati.reduce((a,s)=>a+prezzoLordo(s),0);const togglePag=<div onClick={()=>setPagAperti(p=>({...p,[mese]:!p[mese]}))} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0d2a1a",border:"1px solid #4ade8055",borderRadius:8,padding:"10px 12px",marginBottom:8,cursor:"pointer",color:"#4ade80",fontSize:13}}><span>✓ Pagati · {pagati.length} {pagati.length===1?"servizio":"servizi"}</span><span>{fmt(totPag)} {pagAperti[mese]?"▾":"▸"}</span></div>;
       return <div key={mese} style={{marginBottom:20}}>
         <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:2,marginBottom:8,borderBottom:"1px solid #2d3550",paddingBottom:6}}>{nomeM}</div>
         {gruppiMese.map(({gid,cli,ss,chiuso,tot:totG})=>(
