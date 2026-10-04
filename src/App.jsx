@@ -650,7 +650,7 @@ function AppContent(){
   const daPreventivoAServizio=b=>{
     const nome=(b.clienteNome||"").trim().toLowerCase();
     const cli=clienti.find(c=>c.id===b.committenteId)||(nome?clienti.find(c=>(c.nome||"").trim().toLowerCase()===nome):null);
-    setBozzaServizio({data:b.data||"",prezzo:b.prezzo,pickup:b.pickup||"",dropoff:b.dropoff||"",note:b.note||"",tipo:b.tipo||"trasferimento",oreDisp:b.oreDisp||2,durataManuale:b.durataManuale||null,committenteId:cli?cli.id:""});
+    setBozzaServizio({data:b.data||"",prezzo:b.prezzo,pickup:b.pickup||"",dropoff:b.dropoff||"",note:b.note||"",tipo:b.tipo||"trasferimento",oreDisp:b.oreDisp||2,durataManuale:b.durataManuale||null,tratte:b.tratte||null,committenteId:cli?cli.id:""});
     setPage("servizi");
   };
   const [clienti,setClientiR]=useState([]);

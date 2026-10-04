@@ -101,6 +101,7 @@ async function calcolaKm(da,a){
     return m?Math.round(m/1000):null;
   }catch(e){console.error("calcolaKm",e);return null;}
 }
+const stData={...S.inp,WebkitAppearance:"none",appearance:"none",display:"block"};
 const creaServizioDaPrev=(p,c,tariff,cb)=>{
   if(!cb)return;
   const aliq=parseFloat(p.aliqIva)||parseFloat(tariff.iva)||10;
@@ -113,7 +114,23 @@ const creaServizioDaPrev=(p,c,tariff,cb)=>{
   const tipo=disp.length&&nTrasf?"combinato":disp.length?"disposizione":"trasferimento";
   const durata=tipo==="combinato"?ore+1.5*nTrasf:tipo==="disposizione"?ore:null;
   const voci=righe.map(r=>(r.descrizione||r.tipo)+(q(r)!==1?" ×"+q(r):"")).join("; ");
-  cb({data:p.giornoServizio||"",prezzo:c.tot.toFixed(2),pickup:p.luogoDa||"",dropoff:p.luogoA||"",tipo,oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):2,durataManuale:durata,note:"Da preventivo "+p.id+(p.titoloServizio?" — "+p.titoloServizio:"")+(voci?" · "+voci:""),committenteId:p.committenteId||"",clienteNome:p.clienteNome||""});
+  const trasfR=righe.filter(r=>r.tipo==="trasferimento");
+  let tratte=null;
+  if(trasfR.length+disp.length>=2){
+    tratte=[];
+    righe.forEach(r=>{
+      if(r.tipo==="trasferimento"){const n=Math.max(1,Math.round(q(r)));for(let h=0;h<n;h++)tratte.push({id:uid(),tipo:"trasferimento",ora:"",da:r.da||"",a:r.a||"",ore:"",durata:""});}
+      else if(r.tipo==="disposizione")tratte.push({id:uid(),tipo:"disposizione",ora:"",da:"",a:"",ore:q(r),durata:""});
+    });
+  }
+  const unica=trasfR.length===1&&!disp.length?trasfR[0]:null;
+  const primoT=tratte?tratte.find(t=>t.tipo==="trasferimento"):null;
+  const ultimoT=tratte?[...tratte].reverse().find(t=>t.tipo==="trasferimento"):null;
+  const pick=tratte?(primoT?primoT.da||"":""):(unica?unica.da||"":"");
+  const drop=tratte?(ultimoT?ultimoT.a||"":""):(unica?unica.a||"":"");
+  const altre=righe.filter(r=>!(tratte&&(r.tipo==="trasferimento"||r.tipo==="disposizione")));
+  const vociNote=altre.map(r=>(r.descrizione||r.tipo)+(q(r)!==1?" ×"+q(r):"")).join("; ");
+  cb({data:p.giornoServizio||"",prezzo:c.tot.toFixed(2),pickup:pick||p.luogoDa||"",dropoff:drop||p.luogoA||"",tipo,oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):2,durataManuale:durata,tratte,note:"Da preventivo "+p.id+(p.titoloServizio?" — "+p.titoloServizio:"")+(vociNote?" · "+vociNote:""),committenteId:p.committenteId||"",clienteNome:p.clienteNome||""});
 };
 
 function Preventivi({refreshTick=0,onCreaServizio}){
@@ -370,7 +387,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
 
     {modal==="edit"&&<Modal title={"Preventivo "+form.id} onClose={()=>setModal(null)}>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-        <F label="Data preventivo" w="50%"><input style={S.inp} type="date" value={form.data||""} onChange={set("data")}/></F>
+        <F label="Data preventivo" w="50%"><input style={stData} type="date" value={form.data||""} onChange={set("data")}/></F>
         <F label="Validità (giorni)" w="50%"><input style={S.inp} type="number" value={form.validita||30} onChange={set("validita")}/></F>
       </div>
       <F label="Nome Cliente / Spett.le"><input style={S.inp} value={form.clienteNome||""} onChange={set("clienteNome")} placeholder="Es. Rossi Mario o Azienda Srl"/></F>
@@ -383,7 +400,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
         <F label="Veicolo" w="50%"><input style={S.inp} value={form.veicolo||""} onChange={set("veicolo")} placeholder="Mercedes-Benz Classe E"/></F>
       </div>
       <div style={{display:"flex",gap:10}}>
-        <F label="Giorno del servizio" w="50%"><input style={S.inp} type="date" value={form.giornoServizio||""} onChange={set("giornoServizio")}/></F>
+        <F label="Giorno del servizio" w="50%"><input style={stData} type="date" value={form.giornoServizio||""} onChange={set("giornoServizio")}/></F>
         <F label="Titolo servizio" w="50%"><input style={S.inp} value={form.titoloServizio||""} onChange={set("titoloServizio")} placeholder="Es. TRASFERIMENTO E DISPOSIZIONE"/></F>
       </div>
 
@@ -429,6 +446,10 @@ function Preventivi({refreshTick=0,onCreaServizio}){
               <button onClick={()=>delRiga(r.id)} style={{...S.bR,padding:"4px 6px",fontSize:12}}>✕</button>
             </div>
           </div>
+          {r.tipo==="trasferimento"&&<div style={{display:"flex",gap:8,marginTop:8}}>
+            <div style={{flex:"1 1 0",minWidth:0}}><div style={S.lbl}>Da</div><input style={S.inp} value={r.da||""} onChange={e=>updRiga(r.id,{da:e.target.value})} placeholder="Es. Malpensa T1"/></div>
+            <div style={{flex:"1 1 0",minWidth:0}}><div style={S.lbl}>A</div><input style={S.inp} value={r.a||""} onChange={e=>updRiga(r.id,{a:e.target.value})} placeholder="Es. Milano Centrale"/></div>
+          </div>}
         </div>
       ))}
 
