@@ -85,6 +85,29 @@ function StatoVolo({numero}){
 }
 
 // ── SERVIZI ───────────────────────────────────────────────────────────────────
+const descrVoce=t=>{
+  const o=t.ora?t.ora+" ":"";
+  if(t.tipo==="trasferimento")return o+"Trasferimento "+(t.da||"—")+" → "+(t.a||"—");
+  if(t.tipo==="disposizione")return o+"Disposizione "+(t.ore||"?")+"h";
+  return "Attesa "+(t.durata||"?")+"h";
+};
+const derivaDaTratte=f=>{
+  const t=f.tratte||[];
+  if(!t.length)return f;
+  const num=v=>parseFloat(v)||0;
+  const trasf=t.filter(x=>x.tipo==="trasferimento");
+  const disp=t.filter(x=>x.tipo==="disposizione");
+  const att=t.filter(x=>x.tipo==="attesa");
+  const ore=disp.reduce((a,x)=>a+num(x.ore),0);
+  const durata=ore+att.reduce((a,x)=>a+num(x.durata),0)+1.5*trasf.length;
+  const primaOra=(t.find(x=>x.ora)||{}).ora||f.ora||"";
+  const tipo=disp.length&&trasf.length?"combinato":disp.length?"disposizione":"trasferimento";
+  return {...f,ora:primaOra,tipo,
+    pickup:trasf.length?(trasf[0].da||f.pickup||""):(f.pickup||""),
+    dropoff:trasf.length?(trasf[trasf.length-1].a||f.dropoff||""):(f.dropoff||""),
+    oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):f.oreDisp,
+    durataManuale:durata>0?durata:f.durataManuale};
+};
 function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
   const [modal,setModal]=useState(null);
   const [form,setForm]=useState({});
@@ -98,10 +121,14 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
   const lastTap=useRef(0);
   const MT=["contanti","bonifico","carta","mypos","paypal"];
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+  const addVoce=tipo=>setForm(p=>({...p,tratte:[...(p.tratte||[]),{id:uid(),tipo,ora:"",da:"",a:"",ore:tipo==="disposizione"?2:"",durata:tipo==="attesa"?1:""}]}));
+  const updVoce=(id,patch)=>setForm(p=>({...p,tratte:(p.tratte||[]).map(v=>v.id===id?{...v,...patch}:v)}));
+  const delVoce=id=>setForm(p=>({...p,tratte:(p.tratte||[]).filter(v=>v.id!==id)}));
   const upd=(id,patch)=>{setServizi(p=>p.map(s=>s.id===id?{...s,...patch}:s));supa.from("servizi").update(Object.fromEntries(Object.entries(patch).map(([k,v])=>[{dataPagamento:"data_pagamento",metodoPagamento:"metodo_pagamento",passeggeri:"passeggeri",bagagli:"bagagli",dataFattura:"data_fattura",statoFattura:"stato_fattura",inFattura:"in_fattura",commissione:"commissione",metodoCommissione:"metodo_commissione",gruppoFattura:"gruppo_fattura",noShow:"no_show"}[k]||k,v]))).eq("id",id).then(({error})=>{if(error)console.error("Errore salvataggio servizio:",error);});};
   const submit=()=>{
     if(!form.data)return alert("Inserire la data");
-    setServizi(p=>{const ex=p.find(s=>s.id===form.id);return ex?p.map(s=>s.id===form.id?form:s):[...p,form]});
+    const f=derivaDaTratte(form);
+    setServizi(p=>{const ex=p.find(s=>s.id===form.id);return ex?p.map(s=>s.id===form.id?f:s):[...p,f]});
     setModal(null);
   };
   const [fattServId,setFattServId]=useState(null);
@@ -165,7 +192,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
               <div style={{color:"#c8d3e0",fontSize:15,fontWeight:600,marginTop:3}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:13}}><span style={{fontWeight:700,color:"#e8d5a3",fontSize:15}}>{cli?.nome||"—"}</span> · <span style={{color:col}}>{drv?.nome||"—"} {drv?.targa&&"("+drv.targa+")"}</span></div>
-              <div style={{color:"#8892a4",fontSize:13}}>{[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
+              <div style={{color:"#8892a4",fontSize:13}}>{s.tratte&&s.tratte.length?s.tratte.map((t,i)=><div key={t.id||i}>{descrVoce(t)}</div>):[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
               {(s.passeggeri>1||s.bagagli)&&<div style={{color:"#8892a4",fontSize:11}}>👥 {s.passeggeri||1} pax {s.bagagli?"· 🧳 "+s.bagagli+" bag":""}</div>}
               {s.telefonoUtente&&<div style={{color:"#8892a4",fontSize:11}}>Pass. WA: {s.telefonoUtente}</div>}
               {s.dataPagamento&&<div style={{color:"#4b5563",fontSize:11}}>Pagato {fmtD(s.dataPagamento)} · {s.metodoPagamento}</div>}
@@ -318,6 +345,35 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
       </div>
       <F label="Pick-up"><input style={S.inp} value={form.pickup||""} onChange={set("pickup")}/></F>
       <F label="Drop-off"><input style={S.inp} value={form.dropoff||""} onChange={set("dropoff")}/></F>
+      <div style={{marginTop:6,marginBottom:12}}>
+        <div style={S.lbl}>Voci del servizio (per più tratte nello stesso giorno)</div>
+        {(form.tratte||[]).map((v,i)=><div key={v.id} style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:6,padding:10,marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <span style={{color:"#e8d5a3",fontSize:12,fontWeight:700}}>{i+1}. {v.tipo==="trasferimento"?"Trasferimento":v.tipo==="disposizione"?"Disposizione":"Attesa"}</span>
+            <button type="button" onClick={()=>delVoce(v.id)} style={{...S.bR,padding:"3px 8px"}}>🗑</button>
+          </div>
+          {v.tipo==="trasferimento"&&<div>
+            <div style={{display:"flex",gap:10}}><F label="Orario" w="40%"><input style={S.inp} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F></div>
+            <div style={{display:"flex",gap:10}}>
+              <F label="Da" w="50%"><input style={S.inp} value={v.da||""} onChange={e=>updVoce(v.id,{da:e.target.value})}/></F>
+              <F label="A" w="50%"><input style={S.inp} value={v.a||""} onChange={e=>updVoce(v.id,{a:e.target.value})}/></F>
+            </div>
+          </div>}
+          {v.tipo==="disposizione"&&<div style={{display:"flex",gap:10}}>
+            <F label="Orario inizio" w="50%"><input style={S.inp} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F>
+            <F label="Ore" w="50%"><input style={S.inp} type="number" step="0.5" min="0.5" value={v.ore||""} onChange={e=>updVoce(v.id,{ore:e.target.value})}/></F>
+          </div>}
+          {v.tipo==="attesa"&&<div style={{display:"flex",gap:10}}>
+            <F label="Durata (ore)" w="50%"><input style={S.inp} type="number" step="0.5" min="0.5" value={v.durata||""} onChange={e=>updVoce(v.id,{durata:e.target.value})}/></F>
+          </div>}
+        </div>)}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          <button type="button" onClick={()=>addVoce("trasferimento")} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"6px 12px",cursor:"pointer",fontSize:12}}>+ Trasferimento</button>
+          <button type="button" onClick={()=>addVoce("disposizione")} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"6px 12px",cursor:"pointer",fontSize:12}}>+ Disposizione</button>
+          <button type="button" onClick={()=>addVoce("attesa")} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"6px 12px",cursor:"pointer",fontSize:12}}>+ Attesa</button>
+        </div>
+        {(form.tratte||[]).length>0&&<div style={{color:"#8892a4",fontSize:11,marginTop:6}}>Al salvataggio, orario, presa, destinazione, tipo e durata del servizio vengono calcolati da queste voci (1,5 h per ogni trasferimento, più disposizione e attese). Il campo Durata sopra viene ignorato.</div>}
+      </div>
       <div style={{display:"flex",gap:10,alignItems:"flex-end"}}>
         <F label="Prezzo EUR" w="35%"><input style={S.inp} type="number" step="0.01" value={form.prezzo||""} onChange={set("prezzo")}/></F>
         <div style={{marginBottom:11}}>
