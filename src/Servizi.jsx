@@ -359,9 +359,9 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
               <F label="A" w="50%"><input style={S.inp} value={v.a||""} onChange={e=>updVoce(v.id,{a:e.target.value})}/></F>
             </div>
           </div>}
-          {v.tipo==="disposizione"&&<div style={{display:"flex",gap:10}}>
-            <F label="Orario inizio" w="50%"><input style={S.inp} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F>
-            <F label="Ore" w="50%"><input style={S.inp} type="number" step="0.5" min="0.5" value={v.ore||""} onChange={e=>updVoce(v.id,{ore:e.target.value})}/></F>
+          {v.tipo==="disposizione"&&<div>
+            <F label="Orario inizio"><input style={S.inp} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F>
+            <F label="Ore"><input style={S.inp} type="number" step="0.5" min="0.5" value={v.ore||""} onChange={e=>updVoce(v.id,{ore:e.target.value})}/></F>
           </div>}
           {v.tipo==="attesa"&&<div style={{display:"flex",gap:10}}>
             <F label="Durata (ore)" w="50%"><input style={S.inp} type="number" step="0.5" min="0.5" value={v.durata||""} onChange={e=>updVoce(v.id,{durata:e.target.value})}/></F>
