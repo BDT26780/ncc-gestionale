@@ -1,4 +1,4 @@
-import React,{useState,useRef} from "react";
+import React,{useState,useEffect,useRef} from "react";
 import {eur,S,Ic,Badge,Modal,DelModal,F,fmt,fmtD,dcol,ivaS,prezzoLordo,uid,today,deleteRecord,SwipeToDelete,PagModal,supa} from "./shared.jsx";
 
 // ── WHATSAPP ──────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ function StatoVolo({numero}){
 }
 
 // ── SERVIZI ───────────────────────────────────────────────────────────────────
-function Servizi({servizi,setServizi,clienti,driver,anno}){
+function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
   const [modal,setModal]=useState(null);
   const [form,setForm]=useState({});
   const [filter,setFilter]=useState("");
@@ -109,6 +109,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno}){
   const [confMancanteId,setConfMancanteId]=useState(null);
   const [mostraTutti,setMostraTutti]=useState(false);
   const [dataFiltro,setDataFiltro]=useState(today());
+  useEffect(()=>{if(bozza){setForm({id:uid(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false,passeggeri:1,...bozza,data:bozza.data||today()});setDataFiltro(bozza.data||today());setModal("edit");if(onBozzaUsata)onBozzaUsata();}},[bozza]);
   const filtered=servizi.filter(s=>{
     if(!filter&&s.data!==dataFiltro)return false;
     if(!filter)return true;

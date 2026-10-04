@@ -38,7 +38,7 @@ async function loadPrevTariff(){
     ]);
     const preventivi=(rp.data||[]).map(r=>({
       id:r.id,data:r.data||"",validita:r.validita||30,
-      clienteNome:r.nome_cliente||"",clienteEmail:r.cliente_email||"",
+      clienteNome:r.nome_cliente||"",clienteEmail:r.email_cliente||r.cliente_email||"",
       telefonoCli:r.telefono_cli||"",clienteRef:r.cliente_ref||"",
       veicolo:r.veicolo||"",giornoServizio:r.giorno_servizio||"",
       titoloServizio:r.titolo_servizio||"",aliqIva:r.aliq_iva||"",
@@ -101,7 +101,22 @@ async function calcolaKm(da,a){
     return m?Math.round(m/1000):null;
   }catch(e){console.error("calcolaKm",e);return null;}
 }
-function Preventivi({refreshTick=0}){
+const creaServizioDaPrev=(p,c,tariff,cb)=>{
+  if(!cb)return;
+  const aliq=parseFloat(p.aliqIva)||parseFloat(tariff.iva)||10;
+  if(aliq!==10)alert("Questo preventivo ha aliquota IVA "+aliq+"%. Il gestionale calcola l'IVA dei servizi al 10%: controlla il prezzo prima di salvare.");
+  const q=r=>parseFloat(r.qta)||1;
+  const righe=p.righe||[];
+  const disp=righe.filter(r=>r.tipo==="disposizione");
+  const nTrasf=righe.filter(r=>r.tipo==="trasferimento").reduce((a,r)=>a+q(r),0);
+  const ore=disp.reduce((a,r)=>a+q(r),0);
+  const tipo=disp.length&&nTrasf?"combinato":disp.length?"disposizione":"trasferimento";
+  const durata=tipo==="combinato"?ore+1.5*nTrasf:tipo==="disposizione"?ore:null;
+  const voci=righe.map(r=>(r.descrizione||r.tipo)+(q(r)!==1?" ×"+q(r):"")).join("; ");
+  cb({data:p.giornoServizio||"",prezzo:c.tot.toFixed(2),pickup:p.luogoDa||"",dropoff:p.luogoA||"",tipo,oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):2,durataManuale:durata,note:"Da preventivo "+p.id+(p.titoloServizio?" — "+p.titoloServizio:"")+(voci?" · "+voci:""),committenteId:p.committenteId||"",clienteNome:p.clienteNome||""});
+};
+
+function Preventivi({refreshTick=0,onCreaServizio}){
   const [preventivi,setPrevR]=useState([]);
   const [kmStatus,setKmStatus]=useState("");
   const [sugDa,setSugDa]=useState([]);
@@ -341,6 +356,7 @@ function Preventivi({refreshTick=0}){
             <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700}}>{eur} {fmt(c.tot)}</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
               <button onClick={()=>{setForm({...p});setModal("edit");}} style={{...S.bGr,padding:"5px 12px",fontSize:12}}>Modifica</button>
+              <button onClick={()=>creaServizioDaPrev(p,c,tariff,onCreaServizio)} style={{background:"#1a3520",border:"1px solid #4ade8088",borderRadius:6,color:"#4ade80",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>→ Servizio</button>
               <button onClick={()=>stampaPDF(p)} style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:6,color:"#60a5fa",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>PDF / Stampa</button>
               <button onClick={()=>inviaWA(p)} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:6,color:"#25d366",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>WhatsApp</button>
               <button onClick={()=>setDelId(p.id)} style={{...S.bR,padding:"5px 8px"}}>🗑</button>

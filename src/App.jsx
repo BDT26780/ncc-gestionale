@@ -646,6 +646,13 @@ export default function App(){
 }
 function AppContent(){
   const [page,setPage]=useState("servizi");
+  const [bozzaServizio,setBozzaServizio]=useState(null);
+  const daPreventivoAServizio=b=>{
+    const nome=(b.clienteNome||"").trim().toLowerCase();
+    const cli=clienti.find(c=>c.id===b.committenteId)||(nome?clienti.find(c=>(c.nome||"").trim().toLowerCase()===nome):null);
+    setBozzaServizio({data:b.data||"",prezzo:b.prezzo,pickup:b.pickup||"",dropoff:b.dropoff||"",note:b.note||"",tipo:b.tipo||"trasferimento",oreDisp:b.oreDisp||2,durataManuale:b.durataManuale||null,committenteId:cli?cli.id:""});
+    setPage("servizi");
+  };
   const [clienti,setClientiR]=useState([]);
   const [driver,setDriverR]=useState([]);
   const [servizi,setServiziR]=useState([]);
@@ -792,10 +799,10 @@ function AppContent(){
     <div style={S.cnt}>
       {page==="home"&&<Home servizi={srvF} spese={spF} anno={anno} tutteSpese={spese}/>}
       {page==="calendario"&&<Calendario servizi={servizi} setServizi={setServizi} driver={driver}/>}
-      {page==="servizi"&&<Servizi servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver} anno={anno}/>}
+      {page==="servizi"&&<Servizi servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver} anno={anno} bozza={bozzaServizio} onBozzaUsata={()=>setBozzaServizio(null)}/>}
       {page==="dapagare"&&<DaPagare servizi={srvF} clienti={clienti} driver={driver} setServizi={setServizi}/>}
       {page==="spese"&&<Spese spese={spF} setSpese={setSpese} driver={driver} anno={anno}/>}
-      {page==="preventivi"&&<Preventivi refreshTick={refreshTick}/>}
+      {page==="preventivi"&&<Preventivi refreshTick={refreshTick} onCreaServizio={daPreventivoAServizio}/>}
       {page==="clienti"&&<Clienti clienti={clienti} setClienti={setClienti} servizi={servizi}/>}
       {page==="driver"&&<Driver driver={driver} setDriver={setDriver}/>}
       {page==="report"&&<Report servizi={srvF} spese={spF} clienti={clienti} driver={driver} anno={anno}/>}
