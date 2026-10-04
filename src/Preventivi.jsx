@@ -101,6 +101,10 @@ async function calcolaKm(da,a){
     return m?Math.round(m/1000):null;
   }catch(e){console.error("calcolaKm",e);return null;}
 }
+const apriPercorso=r=>{
+  if(!r.da||!r.a){alert("Compila prima Da e A");return;}
+  window.open("https://maps.apple.com/?saddr="+encodeURIComponent(r.da)+"&daddr="+encodeURIComponent(r.a)+"&dirflg=d","_blank");
+};
 const stData={...S.inp,WebkitAppearance:"none",appearance:"none",display:"block"};
 const creaServizioDaPrev=(p,c,tariff,cb)=>{
   if(!cb)return;
@@ -181,6 +185,13 @@ function Preventivi({refreshTick=0,onCreaServizio}){
   };
 
   const updRiga=(rid,patch)=>setForm(p=>({...p,righe:p.righe.map(r=>r.id!==rid?r:{...r,...patch})}));
+  const updRigaKm=(rid,patch)=>setForm(p=>({...p,righe:p.righe.map(r=>{
+    if(r.id!==rid)return r;
+    const n={...r,...patch};
+    const km=parseFloat(n.km),pk=parseFloat(n.prezzoKm);
+    if(km>0&&pk>0)n.prezzoUnit=Math.round(km*pk*100)/100;
+    return n;
+  })}));
   const delRiga=rid=>setForm(p=>({...p,righe:p.righe.filter(r=>r.id!==rid)}));
 
   const salva=async()=>{
@@ -426,7 +437,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
             </div>
             <div style={{flex:"1 1 80px"}}>
               <div style={S.lbl}>Prezzo unit.</div>
-              <input style={S.inp} type="number" step="0.01" defaultValue={r.prezzoUnit} key={"pu-"+r.id} onBlur={e=>updRiga(r.id,{prezzoUnit:parseFloat(e.target.value)||0})}/>
+              <input style={S.inp} type="number" step="0.01" defaultValue={r.prezzoUnit} key={"pu-"+r.id+"-"+r.prezzoUnit} onBlur={e=>updRiga(r.id,{prezzoUnit:parseFloat(e.target.value)||0})}/>
             </div>
             <div style={{flex:"1 1 60px"}}>
               <div style={S.lbl}>Sconto %</div>
@@ -449,6 +460,11 @@ function Preventivi({refreshTick=0,onCreaServizio}){
           {r.tipo==="trasferimento"&&<div style={{display:"flex",gap:8,marginTop:8}}>
             <div style={{flex:"1 1 0",minWidth:0}}><div style={S.lbl}>Da</div><input style={S.inp} value={r.da||""} onChange={e=>updRiga(r.id,{da:e.target.value})} placeholder="Es. Malpensa T1"/></div>
             <div style={{flex:"1 1 0",minWidth:0}}><div style={S.lbl}>A</div><input style={S.inp} value={r.a||""} onChange={e=>updRiga(r.id,{a:e.target.value})} placeholder="Es. Milano Centrale"/></div>
+          </div>}
+          {r.tipo==="trasferimento"&&<div style={{display:"flex",gap:8,marginTop:8,alignItems:"flex-end"}}>
+            <div style={{flex:"1 1 0",minWidth:0}}><div style={S.lbl}>Km</div><input style={S.inp} type="number" step="0.1" min="0" value={r.km||""} onChange={e=>updRigaKm(r.id,{km:e.target.value})} placeholder="Es. 52"/></div>
+            <div style={{flex:"1 1 0",minWidth:0}}><div style={S.lbl}>€/km</div><input style={S.inp} type="number" step="0.01" min="0" value={r.prezzoKm||""} onChange={e=>updRigaKm(r.id,{prezzoKm:e.target.value})} placeholder="Es. 2.20"/></div>
+            <button type="button" onClick={()=>apriPercorso(r)} style={{background:"#1e2a3a",border:"1px solid #3b82f644",borderRadius:5,color:"#60a5fa",padding:"0 12px",height:34,cursor:"pointer",fontSize:12,whiteSpace:"nowrap"}}>📍 Percorso</button>
           </div>}
         </div>
       ))}
