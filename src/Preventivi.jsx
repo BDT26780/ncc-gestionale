@@ -1,4 +1,4 @@
-import{useState,useEffect}from"react";
+import React,{useState,useEffect}from"react";
 import{eur,S,Ic,Modal,DelModal,F,fmt,uid,today,supa}from"./shared.jsx";
 
 // ── PREVENTIVI ────────────────────────────────────────────────────────────────
@@ -193,7 +193,7 @@ function Preventivi({refreshTick=0}){
     const prev=anteprimaPrev;
     const cc=calcolaPrev(prev,tariff);
     const righeVis=(prev.righe||[]).filter(r=>!r.nascosta);
-    const dataBella=prev.data?new Date(prev.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"";
+    const dataBella=prev.data?(s=>s.charAt(0).toUpperCase()+s.slice(1))(new Date(prev.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"})):"";
     return <div data-preventivo="true" style={{background:"#fff",minHeight:"100vh",fontFamily:"Arial,sans-serif",fontSize:13,color:"#111",padding:28,margin:"-18px"}}>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:20,borderBottom:"1px solid #ddd",paddingBottom:12}} className="no-print">
         <button onClick={()=>setAnteprimaPrev(null)} style={{background:"#f0f0f0",border:"1px solid #ccc",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13}}>← Torna</button>
