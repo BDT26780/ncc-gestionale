@@ -134,7 +134,7 @@ const creaServizioDaPrev=(p,c,tariff,cb)=>{
   const drop=tratte?(ultimoT?ultimoT.a||"":""):(unica?unica.a||"":"");
   const altre=righe.filter(r=>!(tratte&&(r.tipo==="trasferimento"||r.tipo==="disposizione")));
   const vociNote=altre.map(r=>(r.descrizione||r.tipo)+(q(r)!==1?" ×"+q(r):"")).join("; ");
-  cb({data:p.giornoServizio||"",prezzo:c.tot.toFixed(2),pickup:pick||p.luogoDa||"",dropoff:drop||p.luogoA||"",tipo,oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):2,durataManuale:durata,tratte,note:"Da preventivo "+p.id+(p.titoloServizio?" — "+p.titoloServizio:"")+(vociNote?" · "+vociNote:""),committenteId:p.committenteId||"",clienteNome:p.clienteNome||""});
+  cb({data:p.giornoServizio||"",prezzo:c.tot.toFixed(2),pickup:pick||"",dropoff:drop||"",tipo,oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):2,durataManuale:durata,tratte,note:"Da preventivo "+p.id+(p.titoloServizio?" — "+p.titoloServizio:"")+(vociNote?" · "+vociNote:""),committenteId:p.committenteId||"",clienteNome:p.clienteNome||""});
 };
 
 function Preventivi({refreshTick=0,onCreaServizio}){
@@ -417,10 +417,8 @@ function Preventivi({refreshTick=0,onCreaServizio}){
 
       <div style={{display:"flex",gap:10}}>
         <div style={{flex:1,position:"relative"}}>
-          <F label="Partenza (per calcolo km)"><input style={S.inp} value={form.luogoDa||""} onChange={e=>setForm(p=>({...p,luogoDa:e.target.value}))} placeholder="Es. Milano Centrale"/></F>
         </div>
         <div style={{flex:1,position:"relative"}}>
-          <F label="Destinazione (per calcolo km)"><input style={S.inp} value={form.luogoA||""} onChange={e=>setForm(p=>({...p,luogoA:e.target.value}))} placeholder="Es. Malpensa T1"/></F>
         </div>
       </div>
       <div style={{fontSize:11,color:"#e8d5a3",textTransform:"uppercase",letterSpacing:1,margin:"12px 0 8px",borderTop:"1px solid #2d3550",paddingTop:12}}>Voci del preventivo</div>
