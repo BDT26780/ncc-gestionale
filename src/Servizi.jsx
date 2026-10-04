@@ -109,7 +109,7 @@ const derivaDaTratte=f=>{
     oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):f.oreDisp,
     durataManuale:durata>0?durata:f.durataManuale};
 };
-function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
+function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apriId,onApriUsato}){
   const [modal,setModal]=useState(null);
   const [form,setForm]=useState({});
   const [filter,setFilter]=useState("");
@@ -138,6 +138,8 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
   const [mostraTutti,setMostraTutti]=useState(false);
   const [dataFiltro,setDataFiltro]=useState(today());
   useEffect(()=>{if(bozza){setForm({id:uid(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false,passeggeri:1,...bozza,data:bozza.data||today()});setDataFiltro(bozza.data||today());setModal("edit");if(onBozzaUsata)onBozzaUsata();}},[bozza]);
+  const [evid,setEvid]=useState(null);
+  useEffect(()=>{if(apriId){const sv=servizi.find(x=>x.id===apriId);if(sv){setFilter("");setDataFiltro(sv.data||today());setEvid(apriId);setTimeout(()=>{const el=document.getElementById("srv-"+apriId);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},350);setTimeout(()=>setEvid(null),6000);}if(onApriUsato)onApriUsato();}},[apriId]);
   const filtered=servizi.filter(s=>{
     if(!filter&&s.data!==dataFiltro)return false;
     if(!filter)return true;
@@ -175,7 +177,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
       const drv=driver.find(d=>d.id===s.driverId);
       const cli=clienti.find(c=>c.id===s.committenteId);
       const col=dcol(s.driverId,driver);
-      return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.noShow?"2px solid #00d4ff":s.dataPagamento?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":s.statoFattura==="preparata"?"2px solid #fbbf24":`1px solid #2d3550`,boxShadow:s.noShow?"0 0 8px #00d4ff66":s.dataPagamento?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":s.statoFattura==="preparata"?"0 0 8px #fbbf2466":undefined,background:s.dataPagamento?"#0d2a1a":s.noShow?"#00d4ff1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1}}>
+      return <SwipeToDelete key={s.id} onDelete={()=>setDelId(s.id)}><div style={{...S.card,marginBottom:0,border:s.noShow?"2px solid #00d4ff":s.dataPagamento?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":s.statoFattura==="preparata"?"2px solid #fbbf24":`1px solid #2d3550`,boxShadow:s.noShow?"0 0 8px #00d4ff66":s.dataPagamento?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":s.statoFattura==="preparata"?"0 0 8px #fbbf2466":undefined,background:s.dataPagamento?"#0d2a1a":s.noShow?"#00d4ff1a":"#1a1f2e",opacity:s.dataPagamento?0.75:1,...(evid===s.id?{outline:"3px solid #e8d5a3",outlineOffset:2}:{})}} id={"srv-"+s.id}>
         {inline!==s.id?<div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <div style={{flex:1,minWidth:170}}>

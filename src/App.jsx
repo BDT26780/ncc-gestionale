@@ -311,7 +311,8 @@ function Home({servizi,spese,anno,tutteSpese}){
 
 // ── FATTURAZIONE ──────────────────────────────────────────────────────────────
 // ── DA PAGARE ─────────────────────────────────────────────────────────────────
-function DaPagare({servizi,clienti,driver,setServizi}){
+function DaPagare({servizi,clienti,driver,setServizi,onApriServizio}){
+  const apriDa=id=>e=>{if(e.target.closest&&e.target.closest("button,input,select,textarea,a,label"))return;if(onApriServizio)onApriServizio(id);};
   const [filtroC,setFiltroC]=useState("");
   const [pagId,setPagId]=useState(null);
   const [pagAperti,setPagAperti]=useState({});
@@ -375,7 +376,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
               const fattLabel=sf==="emessa"?"✅ Emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
               const pagato=!!s.dataPagamento;
               const scaduto=!pagato&&s.data&&(new Date()-new Date(s.data+"T00:00:00"))/86400000>30;
-              return <div key={s.id} style={{padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:s.noShow?"3px solid #00d4ff":pagato?"1px solid #4ade8033":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
+              return <div key={s.id} onClick={apriDa(s.id)} style={{cursor:"pointer",padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:s.noShow?"3px solid #00d4ff":pagato?"1px solid #4ade8033":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
                 <div style={{marginBottom:5}}>
                   <div style={{color:"#c8d3e0",fontSize:13}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
                   <div style={{color:"#8892a4",fontSize:12}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
@@ -422,7 +423,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
                 const fattLabel=sf==="emessa"?"✅ Emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
                 const pagato=!!s.dataPagamento;
                 const scaduto=!pagato&&s.data&&(new Date()-new Date(s.data+"T00:00:00"))/86400000>30;
-                return <div key={s.id} style={{padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:s.noShow?"3px solid #00d4ff":pagato?"1px solid #4ade8033":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
+                return <div key={s.id} onClick={apriDa(s.id)} style={{cursor:"pointer",padding:"7px 8px",marginBottom:4,borderRadius:6,background:pagato?"#0d2a1a":"#2a0d0d",border:s.noShow?"3px solid #00d4ff":pagato?"1px solid #4ade8033":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":"1px solid #dc262433"}}>
                   <div style={{marginBottom:5}}>
                     <div style={{color:"#c8d3e0",fontSize:13}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
                     <div style={{color:"#8892a4",fontSize:12}}>{drv?.nome||"—"} · {s.pickup||"—"} → {s.dropoff||"—"}</div>
@@ -452,7 +453,7 @@ function DaPagare({servizi,clienti,driver,setServizi}){
           const fattLabel=sf==="emessa"?"✅ Fattura emessa":sf==="preparata"?"🟡 Preparata":"🔴 Mancante";
           const scaduto=!pagato&&s.data&&(new Date()-new Date(s.data+"T00:00:00"))/86400000>30;
           const giallo=!pagato&&!s.inFattura&&sf==="preparata";
-          return <React.Fragment key={s.id}>{primoPag?togglePag:null}<div key={s.id} style={{...S.card,border:s.noShow?"3px solid #00d4ff":pagato?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":giallo?"3px solid #fbbf24":"1px solid #dc262444",boxShadow:s.noShow?"0 0 10px #00d4ff66":pagato?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":scaduto?"0 0 10px #ff1a1a66":giallo?"0 0 8px #fbbf2466":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,opacity:pagato?0.7:1}}>
+          return <React.Fragment key={s.id}>{primoPag?togglePag:null}<div key={s.id} onClick={apriDa(s.id)} style={{cursor:"pointer",...S.card,border:s.noShow?"3px solid #00d4ff":pagato?"2px solid #4ade80":s.statoFattura==="emessa"?"2px solid #4ade80":scaduto?"3px solid #ff1a1a":giallo?"3px solid #fbbf24":"1px solid #dc262444",boxShadow:s.noShow?"0 0 10px #00d4ff66":pagato?"0 0 8px #4ade8066":s.statoFattura==="emessa"?"0 0 8px #4ade8066":scaduto?"0 0 10px #ff1a1a66":giallo?"0 0 8px #fbbf2466":"none",background:pagato?"#0d2a1a":"#2a0d0d",marginBottom:8,opacity:pagato?0.7:1}}>
             <div style={{marginBottom:6}}>
               <div style={{display:"flex",gap:5,marginBottom:4,flexWrap:"wrap",alignItems:"center"}}>
                 <Badge color={s.tipo==="trasferimento"?"blue":s.tipo==="ar"?"teal":s.tipo==="combinato"?"green":"amber"}>{s.tipo==="trasferimento"?"Trasf.":s.tipo==="ar"?"A/R":s.tipo==="combinato"?"Comb. "+(s.oreDisp||"?")+"h":"Disp. "+(s.oreDisp||"?")+"h"}</Badge>
@@ -647,6 +648,7 @@ export default function App(){
 function AppContent(){
   const [page,setPage]=useState("servizi");
   const [bozzaServizio,setBozzaServizio]=useState(null);
+  const [apriServizioId,setApriServizioId]=useState(null);
   const daPreventivoAServizio=b=>{
     const nome=(b.clienteNome||"").trim().toLowerCase();
     const cli=clienti.find(c=>c.id===b.committenteId)||(nome?clienti.find(c=>(c.nome||"").trim().toLowerCase()===nome):null);
@@ -799,8 +801,8 @@ function AppContent(){
     <div style={S.cnt}>
       {page==="home"&&<Home servizi={srvF} spese={spF} anno={anno} tutteSpese={spese}/>}
       {page==="calendario"&&<Calendario servizi={servizi} setServizi={setServizi} driver={driver}/>}
-      {page==="servizi"&&<Servizi servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver} anno={anno} bozza={bozzaServizio} onBozzaUsata={()=>setBozzaServizio(null)}/>}
-      {page==="dapagare"&&<DaPagare servizi={srvF} clienti={clienti} driver={driver} setServizi={setServizi}/>}
+      {page==="servizi"&&<Servizi servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver} anno={anno} bozza={bozzaServizio} onBozzaUsata={()=>setBozzaServizio(null)} apriId={apriServizioId} onApriUsato={()=>setApriServizioId(null)}/>}
+      {page==="dapagare"&&<DaPagare servizi={srvF} clienti={clienti} driver={driver} setServizi={setServizi} onApriServizio={id=>{setApriServizioId(id);setPage("servizi");}}/>}
       {page==="spese"&&<Spese spese={spF} setSpese={setSpese} driver={driver} anno={anno}/>}
       {page==="preventivi"&&<Preventivi refreshTick={refreshTick} onCreaServizio={daPreventivoAServizio}/>}
       {page==="clienti"&&<Clienti clienti={clienti} setClienti={setClienti} servizi={servizi}/>}
