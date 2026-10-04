@@ -85,6 +85,7 @@ function StatoVolo({numero}){
 }
 
 // ── SERVIZI ───────────────────────────────────────────────────────────────────
+const stTempo={...S.inp,WebkitAppearance:"none",appearance:"none",display:"block"};
 const descrVoce=t=>{
   const o=t.ora?t.ora+" ":"";
   if(t.tipo==="trasferimento")return o+"Trasferimento "+(t.da||"—")+" → "+(t.a||"—");
@@ -353,14 +354,14 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
             <button type="button" onClick={()=>delVoce(v.id)} style={{...S.bR,padding:"3px 8px"}}>🗑</button>
           </div>
           {v.tipo==="trasferimento"&&<div>
-            <div style={{display:"flex",gap:10}}><F label="Orario" w="40%"><input style={S.inp} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F></div>
+            <div style={{display:"flex",gap:10}}><F label="Orario" w="40%"><input style={stTempo} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F></div>
             <div style={{display:"flex",gap:10}}>
               <F label="Da" w="50%"><input style={S.inp} value={v.da||""} onChange={e=>updVoce(v.id,{da:e.target.value})}/></F>
               <F label="A" w="50%"><input style={S.inp} value={v.a||""} onChange={e=>updVoce(v.id,{a:e.target.value})}/></F>
             </div>
           </div>}
           {v.tipo==="disposizione"&&<div>
-            <F label="Orario inizio"><input style={S.inp} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F>
+            <F label="Orario inizio"><input style={stTempo} type="time" value={v.ora||""} onChange={e=>updVoce(v.id,{ora:e.target.value})}/></F>
             <F label="Ore"><input style={S.inp} type="number" step="0.5" min="0.5" value={v.ore||""} onChange={e=>updVoce(v.id,{ore:e.target.value})}/></F>
           </div>}
           {v.tipo==="attesa"&&<div style={{display:"flex",gap:10}}>
