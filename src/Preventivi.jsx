@@ -167,7 +167,7 @@ function Preventivi({refreshTick=0}){
   };
 
   const inviaWA=prev=>{
-    const tel=(prev.telefonoCli||"").replace(/[^0-9+]/g,"");
+    const tel=(prev.telefonoCli||"").replace(/[^0-9]/g,"").replace(/^00/,"");
     if(!tel){alert("Inserire WhatsApp cliente nel preventivo");return;}
     const c=calcolaPrev(prev,tariff);
     const righeVis=(prev.righe||[]).filter(r=>!r.nascosta);
@@ -206,7 +206,7 @@ function Preventivi({refreshTick=0}){
           w.focus();
           setTimeout(()=>w.print(),500);
         }} style={{background:"#111",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>🖨 Stampa / Salva PDF</button>
-        {prev.telefonoCli&&<button onClick={()=>{const tel=(prev.telefonoCli||"").replace(/[^0-9+]/g,"");const msg="Gentile "+prev.clienteNome+",\ncome concordato Le invio in allegato il preventivo n. "+prev.id+" di Black Diamond Transfert.\nResto a disposizione per qualsiasi informazione.\nCordiali saluti,\nBlack Diamond Transfert";window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{background:"#25d366",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>📤 Invia via WhatsApp</button>}
+        {prev.telefonoCli&&<button onClick={()=>{const tel=(prev.telefonoCli||"").replace(/[^0-9]/g,"").replace(/^00/,"");const msg="Gentile "+prev.clienteNome+",\ncome concordato Le invio in allegato il preventivo n. "+prev.id+" di Black Diamond Transfert.\nResto a disposizione per qualsiasi informazione.\nCordiali saluti,\nBlack Diamond Transfert";window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{background:"#25d366",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>📤 Invia via WhatsApp</button>}
       </div>
       <style>{`
         @media print {
