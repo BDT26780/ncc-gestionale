@@ -190,6 +190,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata}){
                 {s.statoFattura==="preparata"&&<Badge color="amber">Fattura preparata</Badge>}
                 {s.statoFattura==="emessa"&&<Badge color="green">Fattura emessa</Badge>}
               </div>
+              {s.numeroVolo&&<div style={{color:"#e8d5a3",fontSize:13,fontWeight:700,marginTop:4}}>Volo/Treno: {s.numeroVolo}</div>}
               {s.numeroVolo&&<StatoVolo numero={s.numeroVolo}/>}
               <div style={{color:"#c8d3e0",fontSize:15,fontWeight:600,marginTop:3}}>{fmtD(s.data)} {s.ora} — {s.nomeUtente||"—"}</div>
               <div style={{color:"#8892a4",fontSize:13}}><span style={{fontWeight:700,color:"#e8d5a3",fontSize:15}}>{cli?.nome||"—"}</span> · <span style={{color:col}}>{drv?.nome||"—"} {drv?.targa&&"("+drv.targa+")"}</span></div>
