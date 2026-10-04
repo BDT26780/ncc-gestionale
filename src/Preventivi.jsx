@@ -81,26 +81,6 @@ async function saveTariffario(t){
   });
 }
 
-const ORS_KEY="eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImM4NDhkMTkzNzE4YTQ0ZjhiMjc2MmFkZDkxMDNjMWNhIiwiaCI6Im11cm11cjY0In0=";
-async function calcolaKm(da,a){
-  try{
-    const geo=async q=>{
-      const r=await fetch("https://api.openrouteservice.org/geocode/search?api_key="+ORS_KEY+"&text="+encodeURIComponent(q+", Italia")+"&size=1");
-      const d=await r.json();
-      return d.features?.[0]?.geometry?.coordinates;
-    };
-    const [cA,cB]=await Promise.all([geo(da),geo(a)]);
-    if(!cA||!cB)return null;
-    const r=await fetch("https://api.openrouteservice.org/v2/directions/driving-car",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":ORS_KEY},
-      body:JSON.stringify({coordinates:[cA,cB]})
-    });
-    const d=await r.json();
-    const m=d.routes?.[0]?.summary?.distance;
-    return m?Math.round(m/1000):null;
-  }catch(e){console.error("calcolaKm",e);return null;}
-}
 const apriPercorso=r=>{
   if(!r.da||!r.a){alert("Compila prima Da e A");return;}
   window.open("https://maps.apple.com/?saddr="+encodeURIComponent(r.da)+"&daddr="+encodeURIComponent(r.a)+"&dirflg=d","_blank");
