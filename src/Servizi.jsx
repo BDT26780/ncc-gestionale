@@ -4,7 +4,8 @@ import {eur,S,Ic,Badge,Modal,DelModal,F,fmt,fmtD,dcol,ivaS,prezzoLordo,uid,today
 // ── WHATSAPP ──────────────────────────────────────────────────────────────────
 function msgDriver(s,drv){
   const dataFmt=s.data?new Date(s.data).toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"Non specificata";
-  const tipo=s.tipo==="disposizione"?"Disposizione oraria "+(s.oreDisp||1)+"h":"Trasferimento";
+  const voci=(s.tratte||[]).map((t,i)=>(i+1)+". "+descrVoce(t));
+  const tipo=voci.length?"Servizio con più tratte":s.tipo==="disposizione"?"Disposizione oraria "+(s.oreDisp||1)+"h":"Trasferimento";
   const compenso=s.prezzoDriver?(eur+parseFloat(s.prezzoDriver).toFixed(2)+(s.ivaSeparata?" + IVA":" IVA inclusa")):"Non indicato";
   const haBagagli=s.bagagli!==""&&s.bagagli!==undefined&&s.bagagli!==null;
   return[
@@ -18,14 +19,14 @@ function msgDriver(s,drv){
     "*Passeggeri:* "+(s.passeggeri||1),
     haBagagli?"*Bagagli:* "+s.bagagli:"",
     "*Volo/Treno:* "+(s.numeroVolo||"Non indicato"),"",
-    "*Pick-up:* "+(s.pickup||"Non specificato"),
-    "*Drop-off:* "+(s.dropoff||"Non specificato"),"",
+    ...(voci.length?["*Programma:*",...voci]:["*Pick-up:* "+(s.pickup||"Non specificato"),"*Drop-off:* "+(s.dropoff||"Non specificato")]),"",
     "*Compenso:* "+compenso,
     s.note?"\n*Note:* "+s.note:"",
     "","Buon servizio! Conferma ricezione con *OK*",
   ].filter(l=>l!==null&&l!==undefined&&l!=="").join("\n");
 }
 function msgUtente(s,drv){
+  if(s.tratte&&s.tratte.length){const n0=drv?.nome?.split(" ")[0]||"";const m0=drv?.genere==="M";return n0?`Salve, sono ${n0} ${m0?"il vostro autista":"la vostra autista"} e sono già sul posto, ${m0?"pronto":"pronta"} ad accogliervi per la vostra prenotazione!`:"Salve, siamo già sul posto, pronti ad accogliervi!";}
   const nome=drv?.nome?.split(" ")[0]||"";
   const genere=drv?.genere||"F";
   const autista=genere==="M"?"il vostro autista":"la vostra autista";
@@ -58,9 +59,8 @@ function apriGCal(s,drv,cli){
     s.passeggeri>1?"N° Passeggeri: "+s.passeggeri+(s.bagagli>0?" · Bagagli: "+s.bagagli:""):"",
     "Driver: "+(drv?.nome||"—")+(drv?.targa?" ("+drv.targa+")":""),
     s.numeroVolo?"Volo/Treno: "+s.numeroVolo:"",
-    "Tipo: "+(s.tipo==="disposizione"?"Disposizione "+(s.oreDisp||2)+"h":"Trasferimento"),
-    "Pick-up: "+(s.pickup||"—"),
-    "Drop-off: "+(s.dropoff||"—"),
+    s.tratte&&s.tratte.length?"Tipo: Servizio con più tratte":"Tipo: "+(s.tipo==="disposizione"?"Disposizione "+(s.oreDisp||2)+"h":"Trasferimento"),
+    ...(s.tratte&&s.tratte.length?["Programma:",...s.tratte.map((t,k)=>(k+1)+". "+descrVoce(t))]:["Pick-up: "+(s.pickup||"—"),"Drop-off: "+(s.dropoff||"—")]),
     "Prezzo: "+fmt(s.prezzo)+(s.ivaSeparata?" + IVA":" IVA inclusa"),
     "Metodo: "+(s.metodoPagamento||"—"),
     "ID: "+s.id,
