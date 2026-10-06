@@ -39,7 +39,7 @@ function msgUtente(s,drv){
   return nome?`Salve, sono ${nome} ${autista} e sono già sul posto, ${pronto} ${tipoMsg}!`:"Salve, siamo già sul posto, pronti ad accogliervi!";
 }
 const apriWA=(tel,msg)=>{
-  const t=tel.replace(/[^0-9+]/g,"");
+  const t=tel.replace(/[^0-9]/g,"").replace(/^00/,"");
   window.open("https://wa.me/"+t+"?text="+encodeURIComponent(msg),"_blank");
 };
 function apriGCal(s,drv,cli){
