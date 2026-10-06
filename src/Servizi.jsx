@@ -16,6 +16,7 @@ function msgDriver(s,drv){
     "*Ora:* "+(s.ora||"Non specificata"),
     "*Tipo:* "+tipo,"",
     "*Passeggero:* "+(s.nomeUtente||"Non specificato"),
+    s.telAdriver&&telefoniDi(s).length?"*Tel. passeggero:* "+telefoniDi(s).join(" / "):"",
     "*Passeggeri:* "+(s.passeggeri||1),
     haBagagli?"*Bagagli:* "+s.bagagli:"",
     "*Volo/Treno:* "+(s.numeroVolo||"Non indicato"),"",
@@ -55,7 +56,7 @@ function apriGCal(s,drv,cli){
   const titolo="Prenotazione "+(s.pickup||"—")+" - "+(s.dropoff||"—");
   const det=[
     "Committente: "+(cli?.nome||"—"),
-    "Passeggero: "+(s.nomeUtente||"—")+(s.telefonoUtente?" · Tel: "+s.telefonoUtente:""),
+    "Passeggero: "+(s.nomeUtente||"—")+(telefoniDi(s).length?" · Tel: "+telefoniDi(s).join(" / "):""),
     s.passeggeri>1?"N° Passeggeri: "+s.passeggeri+(s.bagagli>0?" · Bagagli: "+s.bagagli:""):"",
     "Driver: "+(drv?.nome||"—")+(drv?.targa?" ("+drv.targa+")":""),
     s.numeroVolo?"Volo/Treno: "+s.numeroVolo:"",
@@ -86,6 +87,7 @@ function StatoVolo({numero}){
 
 // ── SERVIZI ───────────────────────────────────────────────────────────────────
 const stTempo={...S.inp,WebkitAppearance:"none",appearance:"none",display:"block"};
+const telefoniDi=s=>[s.telefonoUtente,...((s.telefoniExtra||[]).map(t=>t&&t.num))].map(x=>String(x||"").trim()).filter(Boolean);
 const descrVoce=t=>{
   const o=t.ora?t.ora+" ":"";
   if(t.tipo==="trasferimento")return o+"Trasferimento "+(t.da||"—")+" → "+(t.a||"—");
@@ -139,6 +141,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apri
   const [dataFiltro,setDataFiltro]=useState(today());
   useEffect(()=>{if(bozza){setForm({id:uid(),tipo:"trasferimento",oreDisp:2,aliqIva:"10",ivaSeparata:false,passeggeri:1,...bozza,data:bozza.data||today()});setDataFiltro(bozza.data||today());setModal("edit");if(onBozzaUsata)onBozzaUsata();}},[bozza]);
   const [evid,setEvid]=useState(null);
+  const [scegliTel,setScegliTel]=useState(null);
   useEffect(()=>{if(apriId){const sv=servizi.find(x=>x.id===apriId);if(sv){setFilter("");setDataFiltro(sv.data||today());setEvid(apriId);setTimeout(()=>{const el=document.getElementById("srv-"+apriId);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},350);setTimeout(()=>setEvid(null),6000);}if(onApriUsato)onApriUsato();}},[apriId]);
   const filtered=servizi.filter(s=>{
     if(!filter&&s.data!==dataFiltro)return false;
@@ -198,7 +201,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apri
               <div style={{color:"#8892a4",fontSize:13}}><span style={{fontWeight:700,color:"#e8d5a3",fontSize:15}}>{cli?.nome||"—"}</span> · <span style={{color:col}}>{drv?.nome||"—"} {drv?.targa&&"("+drv.targa+")"}</span></div>
               <div style={{color:"#8892a4",fontSize:13}}>{s.tratte&&s.tratte.length?s.tratte.map((t,i)=><div key={t.id||i}>{descrVoce(t)}</div>):[s.pickup,s.dropoff].filter(Boolean).join(" → ")}</div>
               {(s.passeggeri>1||s.bagagli)&&<div style={{color:"#8892a4",fontSize:11}}>👥 {s.passeggeri||1} pax {s.bagagli?"· 🧳 "+s.bagagli+" bag":""}</div>}
-              {s.telefonoUtente&&<div style={{color:"#8892a4",fontSize:11}}>Pass. WA: {s.telefonoUtente}</div>}
+              {telefoniDi(s).length>0&&<div style={{color:"#8892a4",fontSize:11}}>Pass. WA: {telefoniDi(s).join(" · ")}</div>}
               {s.dataPagamento&&<div style={{color:"#4b5563",fontSize:11}}>Pagato {fmtD(s.dataPagamento)} · {s.metodoPagamento}</div>}
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5}}>
@@ -217,7 +220,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apri
                 {!s.noShow?<button onClick={()=>setNoShowId(s.id)} style={{background:"#0e3a4a",border:"1px solid #00d4ff88",borderRadius:4,padding:"6px 12px",color:"#00d4ff",cursor:"pointer",fontSize:13,fontWeight:700}}>🔵 NO SHOW</button>:<button onClick={()=>upd(s.id,{noShow:false})} style={{background:"#00d4ff22",border:"1px solid #00d4ff",borderRadius:4,padding:"6px 12px",color:"#00d4ff",cursor:"pointer",fontSize:13,fontWeight:700}}>🔵 NO SHOW ✕</button>}
                 <button onClick={()=>{setForm({...s});setModal("edit");}} style={{...S.bGr,padding:"10px 18px"}}><Ic n="edt" z={20}/></button>
                 <button onClick={()=>drv?.telefono?apriWA(drv.telefono,msgDriver(s,drv)):alert("Aggiungi WhatsApp al driver")} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:4,padding:"6px 12px",color:"#25d366",cursor:"pointer",fontSize:13,fontWeight:700,opacity:drv?.telefono?1:0.4}}>WA Driver</button>
-                {s.telefonoUtente&&<button onClick={()=>{const msg=msgUtente(s,drv);setWaPreview({tel:s.telefonoUtente,msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"6px 12px",color:"#86efac",cursor:"pointer",fontSize:13,fontWeight:700}}>WA Pass.</button>}
+                {telefoniDi(s).length>0&&<button onClick={()=>{const msg=msgUtente(s,drv);const tt=telefoniDi(s);if(tt.length>1){setScegliTel({tt,msg});}else setWaPreview({tel:tt[0],msg});}} style={{background:"#1a3520",border:"1px solid #25d36644",borderRadius:4,padding:"6px 12px",color:"#86efac",cursor:"pointer",fontSize:13,fontWeight:700}}>WA Pass.</button>}
                 <button onClick={()=>apriGCal(s,drv,cli)} style={{background:"#1a1a3a",border:"1px solid #4285f4",borderRadius:4,padding:"6px 12px",color:"#4285f4",cursor:"pointer",fontSize:13,fontWeight:700}}>GCal</button>
                 {s.nomeUtente&&<button onClick={()=>setCartelloPass(s.nomeUtente)} style={{background:"#1a1a2a",border:"1px solid #a78bfa",borderRadius:4,padding:"6px 12px",color:"#a78bfa",cursor:"pointer",fontSize:13,fontWeight:700}}>🪧 Cartello</button>}
               </div>
@@ -316,6 +319,9 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apri
       </div>
       <div style={{width:80,height:1,background:"#c8a96e",opacity:0.6}}></div>
     </div>}
+    {scegliTel&&<Modal title="A quale numero?" onClose={()=>setScegliTel(null)}>
+      {scegliTel.tt.map((t,i)=><button key={i} type="button" onClick={()=>{setWaPreview({tel:t,msg:scegliTel.msg});setScegliTel(null);}} style={{...S.bGr,display:"block",width:"100%",textAlign:"left",padding:"12px 14px",fontSize:15,marginBottom:8}}>{t}</button>)}
+    </Modal>}
     {waPreview&&<Modal title="Messaggio WhatsApp" onClose={()=>setWaPreview(null)}>
       <div style={{background:"#0f1320",border:"1px solid #2d3550",borderRadius:8,padding:14,whiteSpace:"pre-wrap",fontSize:14,color:"#c8d3e0",marginBottom:14}}>{waPreview.msg}</div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
@@ -343,6 +349,14 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apri
         <F label="N. Volo / Treno" w="50%"><input style={S.inp} value={form.numeroVolo||""} onChange={set("numeroVolo")} placeholder="AZ1234"/></F>
       </div>
       <F label="Tel. WhatsApp Passeggero (+39...)"><input style={S.inp} value={form.telefonoUtente||""} onChange={set("telefonoUtente")} placeholder="+393331234567"/></F>
+      {(form.telefoniExtra||[]).map((t,i)=><div key={t.id||i} style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+        <div style={{flex:"1 1 0",minWidth:0}}><F label={"Altro numero "+(i+1)}><input style={S.inp} value={t.num||""} onChange={e=>setForm(p=>({...p,telefoniExtra:(p.telefoniExtra||[]).map((x,k)=>k===i?{...x,num:e.target.value}:x)}))} placeholder="+39..."/></F></div>
+        <button type="button" onClick={()=>setForm(p=>({...p,telefoniExtra:(p.telefoniExtra||[]).filter((x,k)=>k!==i)}))} style={{...S.bR,padding:"0 10px",height:34,marginBottom:11}}>🗑</button>
+      </div>)}
+      <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",marginBottom:11}}>
+        <button type="button" onClick={()=>setForm(p=>({...p,telefoniExtra:[...(p.telefoniExtra||[]),{id:uid(),num:""}]}))} style={{...S.bGr,padding:"6px 12px",fontSize:12}}>+ Aggiungi numero</button>
+        <label style={{color:"#8892a4",fontSize:12,display:"flex",gap:6,alignItems:"center"}}><input type="checkbox" checked={!!form.telAdriver} onChange={e=>setForm(p=>({...p,telAdriver:e.target.checked}))}/>Includi i telefoni nel messaggio al driver</label>
+      </div>
       <div style={{display:"flex",gap:10}}>
         <F label="N° Passeggeri" w="50%"><input style={S.inp} type="number" min="1" defaultValue={form.passeggeri||1} key={"pax-"+form.id} onBlur={e=>setForm(p=>({...p,passeggeri:parseInt(e.target.value)||1}))}/></F>
         <F label="N° Bagagli" w="50%"><input style={S.inp} type="number" min="0" value={form.bagagli===undefined||form.bagagli===null?"":form.bagagli} onChange={e=>{const v=e.target.value;setForm(p=>({...p,bagagli:v===""?"":parseInt(v)}))}}/></F>
