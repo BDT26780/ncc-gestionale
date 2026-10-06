@@ -33,12 +33,13 @@ function FatturatoMensile({servizi,anno,setVista}){
     filtrati.forEach(s=>{
       if(!s.data)return;
       const m=s.data.slice(0,7);
-      if(!mesiMap[m])mesiMap[m]={mese:m,totale:0,nonIncassato:0,tracciato:0,nonTracciato:0,nonPagati:[]};
+      if(!mesiMap[m])mesiMap[m]={mese:m,totale:0,nonIncassato:0,tracciato:0,nonTracciato:0,mance:0,nonPagati:[]};
       const importo=prezzoLordo(s);
       mesiMap[m].totale+=importo;
       if(!s.dataPagamento){mesiMap[m].nonIncassato+=importo;mesiMap[m].nonPagati.push(s);}
       else if(["bonifico","carta"].includes(s.metodoPagamento)){mesiMap[m].tracciato+=importo;}
       else{mesiMap[m].nonTracciato+=importo;}
+      const mc=parseFloat(s.mancia)||0;if(mc>0){mesiMap[m].totale+=mc;mesiMap[m].mance+=mc;if(["bonifico","carta"].includes(s.metodoMancia))mesiMap[m].tracciato+=mc;else mesiMap[m].nonTracciato+=mc;}
     });
     return Object.values(mesiMap).sort((a,b)=>b.mese.localeCompare(a.mese));
   },[servizi,anno]);
@@ -58,6 +59,7 @@ function FatturatoMensile({servizi,anno,setVista}){
           <div><div style={{fontSize:11,color:"#8892a4",marginBottom:3}}>Tracciato</div><div style={{color:"#4ade80",fontSize:18,fontFamily:"Georgia,serif",fontWeight:700}}>{fmt(m.tracciato)}</div></div>
           <div><div style={{fontSize:11,color:"#8892a4",marginBottom:3}}>Non tracciato</div><div style={{color:"#60a5fa",fontSize:18,fontFamily:"Georgia,serif",fontWeight:700}}>{fmt(m.nonTracciato)}</div></div>
         </div>
+        {m.mance>0&&<div style={{color:"#8892a4",fontSize:11,marginTop:8}}>di cui mance: {fmt(m.mance)}</div>}
         {aperto&&<div style={{marginTop:12,borderTop:"1px solid #2d3550",paddingTop:10}}>
           {m.nonPagati.sort((a,b)=>a.data+a.ora>b.data+b.ora?1:-1).map(s=><div key={s.id} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2d355033",fontSize:13}}><span style={{color:"#8892a4"}}>{fmtD(s.data)} · {(s.pickup||"—")+" → "+(s.dropoff||"—")}</span><span style={{color:"#f87171",fontWeight:600}}>{fmt(prezzoLordo(s))}</span></div>)}
         </div>}
@@ -74,16 +76,22 @@ function Home({servizi,spese,anno,tutteSpese}){
   const salvaRiportoAnno=async()=>{const {data}=await supa.from("tariffario").select("iva_credito_riportato").eq("id","default").single();const r=data?.iva_credito_riportato||{};const giaSalvato=parseFloat(r[anno]);const residuo=!isNaN(giaSalvato)?giaSalvato:(st.trim[3]?.nuovoCred||0);r[anno]=residuo;await supa.from("tariffario").update({iva_credito_riportato:r}).eq("id","default");alert("Riporto IVA "+anno+" → "+String(parseInt(anno)+1)+": euro"+residuo.toFixed(2));};
   const [redditoTaxi,setRedditoTaxi]=useState(0);
   useEffect(()=>{supa.from("tariffario").select("reddito_taxi_2025").eq("id","default").single().then(({data})=>{if(data?.reddito_taxi_2025)setRedditoTaxi(parseFloat(data.reddito_taxi_2025)||0);});},[]);
+  const mnImp=s=>parseFloat(s.mancia)||0;
+  const mn=(servizi||[]).filter(s=>mnImp(s)>0);
+  const manciaTr=mn.filter(s=>["bonifico","carta"].includes(s.metodoMancia)).reduce((a,s)=>a+mnImp(s),0);
+  const manciaTot=mn.reduce((a,s)=>a+mnImp(s),0);
+  const manciaNonTr=manciaTot-manciaTr;
   const st=useMemo(()=>{
     const pag=servizi.filter(s=>s.dataPagamento);
-    const tot=pag.reduce((a,s)=>a+prezzoLordo(s),0);
+    const tot=pag.reduce((a,s)=>a+prezzoLordo(s),0)+manciaTot;
     const totCommissioni=servizi.reduce((a,s)=>a+(parseFloat(s.commissione)||0),0);
     const xm={contanti:0,bonifico:0,carta:0,mypos:0,paypal:0};
     pag.forEach(s=>{if(s.metodoPagamento)xm[s.metodoPagamento]=(xm[s.metodoPagamento]||0)+prezzoLordo(s)});
+    mn.forEach(s=>{const k=s.metodoMancia||"contanti";xm[k]=(xm[k]||0)+mnImp(s);});
     const taxiExtra=anno==="2025"?redditoTaxi:0;
     const dichNCC=(xm.bonifico||0)+(xm.carta||0);
     const dich=dichNCC+taxiExtra;
-    const iva=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+ivaS(s),0);
+    const iva=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+ivaS(s),0)+(manciaTr-manciaTr/1.1);
     const dichNetto=dichNCC-iva+taxiExtra;
     const ts=spese||[];
     const totSp=ts.filter(s=>s.tipo!=="inps_anno_prec"&&s.tipo!=="detrazioni_19"&&s.tipo!=="perdita_anno_prec").reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
@@ -110,7 +118,7 @@ function Home({servizi,spese,anno,tutteSpese}){
       let riporto=ivaRiportata;
       return TRIM.map(t=>{
         const mOk=d=>t.months.includes(parseInt(d?.slice(5,7)));
-        const deb=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)&&mOk(s.dataPagamento)).reduce((a,s)=>a+ivaS(s),0);
+        const deb=pag.filter(s=>["bonifico","carta"].includes(s.metodoPagamento)&&mOk(s.dataPagamento)).reduce((a,s)=>a+ivaS(s),0)+mn.filter(s=>["bonifico","carta"].includes(s.metodoMancia)&&mOk(s.data)).reduce((a,s)=>a+mnImp(s)-mnImp(s)/1.1,0);
         const cred=allSp.filter(s=>mOk(s.data)).reduce((a,s)=>{const m=s.descrizione?.match(/\[IVA:([\d.]+)\]/);if(m)return a+parseFloat(m[1]);if(s.isQuota)return a;const imp=parseFloat(s.importo)||0;const al=ALIQ_MAP[s.aliqIva]||0;return a+imp*(al/(1+al))},0);
         const saldo=deb-(cred+riporto);
         const daVersare=Math.max(0,saldo);
@@ -209,6 +217,11 @@ function Home({servizi,spese,anno,tutteSpese}){
           <div style={{color:"#e8d5a3",fontFamily:"Georgia,serif",fontSize:22,fontWeight:700}}>{fmt(st.tassaOrd)}</div>
         </div>
         <div style={{fontSize:10,color:"#6b7280",marginTop:6}}>* Verificare con commercialista.</div>
+      </Card>
+      <Card title="Mance" col="#e8d5a3">
+        <Big val={manciaTot}/>
+        <Row l="Tracciate (carta/bonifico)" v={fmt(manciaTr)}/>
+        <Row l="Non tracciate" v={fmt(manciaNonTr)}/>
       </Card>
       <Card title="Spese totali (deducibili)" col="#f87171">
         <Big val={st.totSp} col="#f87171"/>
@@ -508,13 +521,15 @@ function Report({servizi,spese,clienti,driver,anno}){
     const mm=String(mi+1).padStart(2,"0");
     const srvM=srv.filter(s=>s.data?.slice(5,7)===mm);
     const spM=sp.filter(s=>s.data?.slice(5,7)===mm);
-    const entrate=srvM.filter(s=>s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
+    const mancM=srvM.filter(s=>(parseFloat(s.mancia)||0)>0);
+    const mancaM=f=>mancM.filter(f).reduce((a,s)=>a+(parseFloat(s.mancia)||0),0);
+    const entrate=srvM.filter(s=>s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0)+mancaM(()=>true);
     const commissioni=srvM.reduce((a,s)=>a+(parseFloat(s.commissione)||0),0);
     const spese_tot=spM.reduce((a,s)=>a+(parseFloat(s.importo)||0),0);
-    const contanti=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="contanti").reduce((a,s)=>a+prezzoLordo(s),0);
-    const bonifico=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="bonifico").reduce((a,s)=>a+prezzoLordo(s),0);
-    const carta=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="carta").reduce((a,s)=>a+prezzoLordo(s),0);
-    const altro=srvM.filter(s=>s.dataPagamento&&!["contanti","bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+prezzoLordo(s),0);
+    const contanti=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="contanti").reduce((a,s)=>a+prezzoLordo(s),0)+mancaM(s=>(s.metodoMancia||"contanti")==="contanti");
+    const bonifico=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="bonifico").reduce((a,s)=>a+prezzoLordo(s),0)+mancaM(s=>s.metodoMancia==="bonifico");
+    const carta=srvM.filter(s=>s.dataPagamento&&s.metodoPagamento==="carta").reduce((a,s)=>a+prezzoLordo(s),0)+mancaM(s=>s.metodoMancia==="carta");
+    const altro=srvM.filter(s=>s.dataPagamento&&!["contanti","bonifico","carta"].includes(s.metodoPagamento)).reduce((a,s)=>a+prezzoLordo(s),0)+mancaM(s=>!["contanti","bonifico","carta"].includes(s.metodoMancia||"contanti"));
     const nServ=srvM.filter(s=>s.dataPagamento).length;
     return{nome,mm,entrate,commissioni,spese_tot,contanti,bonifico,carta,altro,nServ};
   }).filter(m=>m.entrate>0||m.spese_tot>0);

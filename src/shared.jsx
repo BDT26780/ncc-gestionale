@@ -41,7 +41,7 @@ export const loadAll=async()=>{
       prezzo:r.prezzo||"",prezzoDriver:r.prezzo_driver||"",
       ivaSeparata:r.iva_separata||false,metodoPagamento:r.metodo_pagamento||"",
       dataPagamento:r.data_pagamento||"",dataFattura:r.data_fattura||"",
-      inFattura:r.in_fattura||false,durataManuale:r.durata_manuale||null,statoFattura:r.stato_fattura||"mancante",commissione:r.commissione||null,metodoCommissione:r.metodo_commissione||null,gruppoFattura:r.gruppo_fattura||null,noShow:r.no_show||false,tratte:r.tratte||null,
+      inFattura:r.in_fattura||false,durataManuale:r.durata_manuale||null,statoFattura:r.stato_fattura||"mancante",commissione:r.commissione||null,metodoCommissione:r.metodo_commissione||null,gruppoFattura:r.gruppo_fattura||null,noShow:r.no_show||false,tratte:r.tratte||null,mancia:r.mancia||null,metodoMancia:r.metodo_mancia||"",
       note:r.note||"",
     }));
     const spese=(rsp.data||[]).map(r=>({
@@ -99,7 +99,7 @@ export const saveAll=async(clienti,driver,servizi,spese)=>{
       data_pagamento:r.dataPagamento||null,
       data_fattura:r.dataFattura||null,stato_fattura:r.statoFattura||"mancante",
       in_fattura:r.inFattura||false,commissione:r.commissione||null,metodo_commissione:r.metodoCommissione||null,gruppo_fattura:r.gruppoFattura||null,no_show:r.noShow||false,
-      durata_manuale:r.durataManuale||null,tratte:r.tratte||null,
+      durata_manuale:r.durataManuale||null,tratte:r.tratte||null,mancia:r.mancia?parseFloat(r.mancia):null,metodo_mancia:r.mancia?(r.metodoMancia||null):null,
       note:r.note||null,
     })));
   }

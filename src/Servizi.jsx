@@ -406,6 +406,10 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apri
         </div>
         <F label="Metodo pag." w="30%"><select style={S.inp} value={form.metodoPagamento||""} onChange={set("metodoPagamento")}><option value="">—</option>{MT.map(m=><option key={m} value={m}>{m}</option>)}</select></F>
       </div>
+      <div style={{display:"flex",gap:10}}>
+        <F label="Mancia (€)" w="50%"><input style={S.inp} type="number" step="0.01" min="0" value={form.mancia||""} onChange={set("mancia")}/></F>
+        <F label="Metodo mancia" w="50%"><select style={S.inp} value={form.metodoMancia||"contanti"} onChange={set("metodoMancia")}>{["contanti","bonifico","carta","mypos","paypal"].map(m=><option key={m} value={m}>{m}</option>)}</select></F>
+      </div>
       <F label="Compenso driver — solo su WhatsApp">
         <input style={{...S.inp,borderColor:"#d97706"}} type="number" step="0.01" value={form.prezzoDriver||""} onChange={set("prezzoDriver")} placeholder="Non visibile in anagrafica"/>
       </F>
