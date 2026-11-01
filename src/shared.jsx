@@ -19,7 +19,7 @@ export const loadAll=async()=>{
     const clienti=(rc.data||[]).map(r=>({
       id:r.id,nome:r.nome,piva:r.piva||"",cf:r.cf||"",
       email:r.email||"",telefono:r.telefono||"",
-      referente:r.referente||"",indirizzo:r.indirizzo||"",note:r.note||"",
+      referente:r.referente||"",indirizzo:r.indirizzo||"",note:r.note||"",ragioneSociale:r.ragione_sociale||"",pec:r.pec||"",codiceDestinatario:r.codice_destinatario||"",
     }));
     const driver=(rd.data||[]).map(r=>({
       id:r.id,
@@ -65,7 +65,7 @@ export const saveAll=async(clienti,driver,servizi,spese)=>{
     await supa.from("committenti").upsert(clienti.map(r=>({
       id:r.id,nome:r.nome,piva:r.piva||null,cf:r.cf||null,
       email:r.email||null,telefono:r.telefono||null,
-      referente:r.referente||null,indirizzo:r.indirizzo||null,note:r.note||null,
+      referente:r.referente||null,indirizzo:r.indirizzo||null,note:r.note||null,ragione_sociale:r.ragioneSociale||null,pec:r.pec||null,codice_destinatario:r.codiceDestinatario||null,
     })));
   }
   if(driver.length){

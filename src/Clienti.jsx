@@ -25,11 +25,13 @@ function Clienti({clienti,setClienti,servizi}){
       <h2 style={{...S.gld,margin:0}}>Committenti</h2>
       <button style={S.bG} onClick={()=>{setForm({id:uid()});setModal(1)}}><Ic n="pls" z={14}/>Nuovo</button>
     </div>
-    {clienti.map(c=><div key={c.id} style={S.card}>
+    {clienti.map(c=><div key={c.id} style={{...S.card,...(c.ragioneSociale?{}:{borderLeft:"3px solid #f59e0b"})}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
         <div>
           <div style={{color:"#e2e8f0",fontWeight:600,fontSize:16}}>{c.nome}</div>
-          <div style={{color:"#8892a4",fontSize:13}}>{[c.piva&&"P.IVA "+c.piva,c.cf&&"CF "+c.cf,c.email].filter(Boolean).join(" · ")}</div>
+          {c.ragioneSociale&&c.ragioneSociale!==c.nome&&<div style={{color:"#8892a4",fontSize:12}}>{c.ragioneSociale}</div>}
+          {!c.ragioneSociale&&<div style={{color:"#f59e0b",fontSize:12}}>Non in anagrafica fatturazione</div>}
+          <div style={{color:"#8892a4",fontSize:13}}>{[c.piva&&"P.IVA "+c.piva,c.cf&&"CF "+c.cf,c.email,c.pec&&"PEC "+c.pec,c.codiceDestinatario&&"SDI "+c.codiceDestinatario].filter(Boolean).join(" · ")}</div>
           <div style={{color:"#8892a4",fontSize:13}}>{c.telefono}{c.referente&&" · "+c.referente}</div>
           {mediaGiorni(c.id)!==null&&(()=>{const m=mediaGiorni(c.id);return<div style={{color:"#60a5fa",fontSize:13,fontWeight:600,marginTop:3}}>⏱ Media pagamento: {m.valore} giorni{m.n<3&&<span style={{color:"#8892a4",fontWeight:400}}> (dato provvisorio, {m.n} servizi)</span>}</div>;})()}
         </div>
@@ -42,7 +44,8 @@ function Clienti({clienti,setClienti,servizi}){
     {clienti.length===0&&<div style={{color:"#4b5563",textAlign:"center",padding:40}}>Nessun committente</div>}
     {delId&&<DelModal title="Eliminare questo committente?" onClose={()=>setDelId(null)} onConfirm={()=>{deleteRecord("committenti",delId);setClienti(p=>p.filter(x=>x.id!==delId));setDelId(null);}}/>}
     {modal&&<Modal title={form.nome?"Modifica":"Nuovo committente"} onClose={()=>setModal(null)}>
-      <F label="Ragione Sociale / Nome"><input style={S.inp} value={form.nome||""} onChange={set("nome")}/></F>
+      <F label="Nome (come lo usi nel gestionale)"><input style={S.inp} value={form.nome||""} onChange={set("nome")}/></F>
+      <F label="Ragione sociale ufficiale (come in fattura e in banca)"><input style={S.inp} value={form.ragioneSociale||""} onChange={set("ragioneSociale")}/></F>
       <div style={{display:"flex",gap:10}}>
         <F label="P.IVA" w="50%"><input style={S.inp} value={form.piva||""} onChange={set("piva")}/></F>
         <F label="CF" w="50%"><input style={S.inp} value={form.cf||""} onChange={set("cf")}/></F>
@@ -50,6 +53,10 @@ function Clienti({clienti,setClienti,servizi}){
       <div style={{display:"flex",gap:10}}>
         <F label="Email" w="50%"><input style={S.inp} type="email" value={form.email||""} onChange={set("email")}/></F>
         <F label="Telefono" w="50%"><input style={S.inp} value={form.telefono||""} onChange={set("telefono")}/></F>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <F label="PEC" w="50%"><input style={S.inp} value={form.pec||""} onChange={set("pec")}/></F>
+        <F label="Codice destinatario" w="50%"><input style={S.inp} value={form.codiceDestinatario||""} onChange={set("codiceDestinatario")}/></F>
       </div>
       <F label="Referente"><input style={S.inp} value={form.referente||""} onChange={set("referente")}/></F>
       <F label="Indirizzo"><input style={S.inp} value={form.indirizzo||""} onChange={set("indirizzo")}/></F>

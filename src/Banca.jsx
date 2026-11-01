@@ -4,7 +4,7 @@ import {supa,fmt,fmtD,today,prezzoLordo,S,Modal} from "./shared.jsx";
 const parseCSV=(t,sep)=>{const rows=[];let r=[],c="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++;}else q=false;}else c+=ch;}else if(ch==='"')q=true;else if(ch===sep){r.push(c);c="";}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;r.push(c);c="";if(r.length>1||r[0]!=="")rows.push(r);r=[];}else c+=ch;}if(c!==""||r.length){r.push(c);rows.push(r);}return rows;};
 const num=x=>{let v=String(x||"").trim();if(v.includes(",")&&v.includes("."))v=v.replace(/\./g,"").replace(",",".");else if(v.includes(","))v=v.replace(",",".");const n=parseFloat(v);return isNaN(n)?0:n;};
 const isoD=d=>{const p=String(d||"").trim().split("/");return p.length===3?p[2]+"-"+p[1].padStart(2,"0")+"-"+p[0].padStart(2,"0"):"";};
-const STOP=["srl","spa","sas","snc","sa","di","del","della","dei","societa","the","and"];
+const STOP=["srl","spa","sas","snc","sa","di","del","della","dei","societa","the","and","milano","transfer","service"];
 const norm=t=>String(t||"").toLowerCase().replace(/[^a-z0-9]/g," ").split(/\s+/).filter(w=>w.length>2&&!STOP.includes(w));
 const nomeOk=(a,b)=>{const x=norm(a),y=norm(b);return x.some(w=>y.includes(w));};
 
@@ -48,7 +48,7 @@ export default function Banca({servizi,clienti,setServizi}){
   useEffect(()=>{carica();},[]);
 
   const calc=useMemo(()=>{
-    const cliNome=id=>((clienti||[]).find(c=>c.id===id)||{}).nome||"—";
+    const cliNome=id=>{const c=(clienti||[]).find(c=>c.id===id)||{};return (c.nome||"—")+(c.ragioneSociale&&c.ragioneSociale!==c.nome?" ("+c.ragioneSociale+")":"");};
     const somma=g=>g.reduce((a,s)=>a+prezzoLordo(s),0);
     const d10=x=>String(x||"").slice(0,10);
     const aperti=servizi.filter(s=>!s.dataPagamento&&s.data&&s.data<=today());
@@ -59,14 +59,15 @@ export default function Banca({servizi,clienti,setServizi}){
     aperti.filter(s=>s.inFattura).forEach(s=>{const k=s.gruppoFattura||("legacy-"+(s.committenteId||"none"));(gr[k]=gr[k]||[]).push(s);});
     Object.keys(gr).forEach(k=>{const g=gr[k];if(g.length>1)cand.push({ids:g.map(s=>s.id),multi:true,dmax:g.map(s=>s.data).sort().pop(),tot:somma(g),cli:cliNome(g[0].committenteId),label:"Fattura in corso: "+g.length+" servizi"});});
     const pagati=servizi.filter(s=>s.dataPagamento&&s.metodoPagamento==="bonifico");
-    const candP=pagati.map(s=>({ids:[s.id],multi:false,tot:prezzoLordo(s),cli:cliNome(s.committenteId),dp:d10(s.dataPagamento)}));
+    const candP=pagati.map(s=>({ids:[s.id],multi:false,tot:prezzoLordo(s),cli:cliNome(s.committenteId),dp:d10(s.dataPagamento),dmax:s.data,alt:!s.ivaSeparata}));
     const gp={},gd={};
     pagati.forEach(s=>{
       if(s.gruppoFattura)(gp[s.gruppoFattura]=gp[s.gruppoFattura]||[]).push(s);
       const k=(s.committenteId||"none")+"|"+d10(s.dataPagamento);
       (gd[k]=gd[k]||[]).push(s);
     });
-    [gp,gd].forEach(m=>Object.keys(m).forEach(k=>{const g=m[k];if(g.length>1)candP.push({ids:g.map(s=>s.id),multi:true,tot:somma(g),cli:cliNome(g[0].committenteId),dp:g.map(s=>d10(s.dataPagamento)).sort().pop()});}));
+    [gp,gd].forEach(m=>Object.keys(m).forEach(k=>{const g=m[k];if(g.length>1)candP.push({ids:g.map(s=>s.id),multi:true,tot:somma(g),cli:cliNome(g[0].committenteId),dp:g.map(s=>d10(s.dataPagamento)).sort().pop(),dmax:g.map(s=>s.data).sort().pop(),alt:!g.some(s=>s.ivaSeparata)});}));
+    Object.keys(gd).forEach(k=>{const g=gd[k];const n=g.length;if(n>2&&n<=12){for(let m=3;m<(1<<n)-1;m++){const sub=g.filter((_,i)=>m&(1<<i));if(sub.length>1)candP.push({ids:sub.map(s=>s.id),multi:true,tot:somma(sub),cli:cliNome(sub[0].committenteId),dp:d10(sub[0].dataPagamento),dmax:sub.map(s=>s.data).sort().pop(),alt:!sub.some(s=>s.ivaSeparata)});}}});
     const giorni=(a,b)=>Math.abs((new Date(a+"T00:00:00")-new Date(b+"T00:00:00"))/864e5);
     const usati=new Set(),usatiP=new Set();
     return dbRows.map(b=>{
@@ -77,7 +78,7 @@ export default function Banca({servizi,clienti,setServizi}){
       if(buoni.length===1){auto=opts.indexOf(buoni[0]);buoni[0].ids.forEach(id=>usati.add(id));}
       let reg=null;
       if(!opts.some(o=>o.sicuro)){
-        const rp=candP.find(c=>Math.round(c.tot*100)===cents&&(c.multi||nomeOk(b.nome,c.cli))&&(new Date(c.dp)-new Date(b.data))/86400000>=-45&&c.ids.every(id=>!usatiP.has(id)));
+        const rp=candP.find(c=>(Math.round(c.tot*100)===cents||(c.alt&&Math.round(c.tot*110)===cents))&&String(c.dmax||"")<=b.data&&(c.multi||nomeOk(b.nome,c.cli))&&(new Date(c.dp)-new Date(b.data))/86400000>=-45&&c.ids.every(id=>!usatiP.has(id)));
         if(rp){reg=rp;rp.ids.forEach(id=>usatiP.add(id));}
       }
       return {...b,opts,auto,reg};
