@@ -356,6 +356,7 @@ function DaPagare({servizi,clienti,driver,setServizi,onApriServizio}){
   const oggi=new Date().toISOString().slice(0,7);
   const mesi=[...new Set([...lista.map(s=>s.data?.slice(0,7)),...perCli.filter(g=>meseGruppo(g)<oggiMese).map(meseGruppo)])].filter(Boolean).sort((a,b)=>{if(a===oggi)return -1;if(b===oggi)return 1;const aPass=a<oggi;const bPass=b<oggi;if(aPass&&!bPass)return 1;if(!aPass&&bPass)return -1;return a>b?1:-1;});
   const tot=lista.filter(s=>!s.dataPagamento).reduce((a,s)=>a+prezzoLordo(s),0);
+  const totDovuto=tot+inFatturaList.filter(s=>(!filtroC||s.committenteId===filtroC)&&matchTesto(s)).reduce((a,s)=>a+prezzoLordo(s),0);
   return <div>
     <h2 style={{...S.gld,marginTop:0}}>Da Pagare</h2>
     <div style={{display:"flex",gap:10,marginBottom:10,alignItems:"center",flexWrap:"wrap"}}>
@@ -363,7 +364,7 @@ function DaPagare({servizi,clienti,driver,setServizi,onApriServizio}){
         <option value="">Tutti i committenti</option>
         {clienti.map(c=><option key={c.id} value={c.id}>{c.nome}</option>)}
       </select>
-      <div style={{background:"#dc262633",border:"1px solid #dc2626",borderRadius:8,padding:"5px 12px",color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(tot)}</div>
+      <div style={{background:"#dc262633",border:"1px solid #dc2626",borderRadius:8,padding:"5px 12px",color:"#f87171",fontWeight:700,whiteSpace:"nowrap"}}>{fmt(totDovuto)}</div>
     </div>
     <div style={{position:"relative",marginBottom:14}}>
       <input style={{...S.inp,paddingLeft:32}} placeholder="Cerca data, nome, committente, percorso..." value={filtroTesto} onChange={e=>setFiltroTesto(e.target.value)}/>
