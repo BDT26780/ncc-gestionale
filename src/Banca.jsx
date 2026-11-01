@@ -35,6 +35,7 @@ export default function Banca({servizi,clienti,setServizi}){
   const [dbRows,setDbRows]=useState([]);
   const [over,setOver]=useState({});
   const [giaCtrl,setGiaCtrl]=useState(false);
+  const [showReg,setShowReg]=useState(false);
   const [err,setErr]=useState("");
   const [esito,setEsito]=useState("");
   const [busy,setBusy]=useState(false);
@@ -47,26 +48,46 @@ export default function Banca({servizi,clienti,setServizi}){
   useEffect(()=>{carica();},[]);
 
   const calc=useMemo(()=>{
-    const aperti=servizi.filter(s=>!s.dataPagamento&&s.data&&s.data<=today());
     const cliNome=id=>((clienti||[]).find(c=>c.id===id)||{}).nome||"—";
-    const cand=aperti.map(s=>({ids:[s.id],tot:prezzoLordo(s),cli:cliNome(s.committenteId),label:fmtD(s.data)+" "+(s.nomeUtente||"—")+" · "+(s.pickup||"—")+" → "+(s.dropoff||"—")}));
+    const somma=g=>g.reduce((a,s)=>a+prezzoLordo(s),0);
+    const d10=x=>String(x||"").slice(0,10);
+    const aperti=servizi.filter(s=>!s.dataPagamento&&s.data&&s.data<=today());
+    const cand=aperti.map(s=>({ids:[s.id],multi:false,tot:prezzoLordo(s),cli:cliNome(s.committenteId),label:fmtD(s.data)+" "+(s.nomeUtente||"—")+" · "+(s.pickup||"—")+" → "+(s.dropoff||"—")}));
     const gr={};
     aperti.filter(s=>s.inFattura).forEach(s=>{const k=s.gruppoFattura||("legacy-"+(s.committenteId||"none"));(gr[k]=gr[k]||[]).push(s);});
-    Object.keys(gr).forEach(k=>{const g=gr[k];if(g.length>1)cand.push({ids:g.map(s=>s.id),tot:g.reduce((a,s)=>a+prezzoLordo(s),0),cli:cliNome(g[0].committenteId),label:"Fattura in corso: "+g.length+" servizi"});});
-    const usati=new Set();
+    Object.keys(gr).forEach(k=>{const g=gr[k];if(g.length>1)cand.push({ids:g.map(s=>s.id),multi:true,tot:somma(g),cli:cliNome(g[0].committenteId),label:"Fattura in corso: "+g.length+" servizi"});});
+    const pagati=servizi.filter(s=>s.dataPagamento&&s.metodoPagamento==="bonifico");
+    const candP=pagati.map(s=>({ids:[s.id],multi:false,tot:prezzoLordo(s),cli:cliNome(s.committenteId),dp:d10(s.dataPagamento)}));
+    const gp={},gd={};
+    pagati.forEach(s=>{
+      if(s.gruppoFattura)(gp[s.gruppoFattura]=gp[s.gruppoFattura]||[]).push(s);
+      const k=(s.committenteId||"none")+"|"+d10(s.dataPagamento);
+      (gd[k]=gd[k]||[]).push(s);
+    });
+    [gp,gd].forEach(m=>Object.keys(m).forEach(k=>{const g=m[k];if(g.length>1)candP.push({ids:g.map(s=>s.id),multi:true,tot:somma(g),cli:cliNome(g[0].committenteId),dp:g.map(s=>d10(s.dataPagamento)).sort().pop()});}));
+    const giorni=(a,b)=>Math.abs((new Date(a+"T00:00:00")-new Date(b+"T00:00:00"))/864e5);
+    const usati=new Set(),usatiP=new Set();
     return dbRows.map(b=>{
-      const opts=cand.filter(c=>Math.round(c.tot*100)===Math.round(b.importo*100)).map(c=>({...c,nomeOk:nomeOk(b.nome,c.cli)}));
-      const buoni=opts.filter(o=>o.nomeOk&&o.ids.every(id=>!usati.has(id)));
+      const cents=Math.round(b.importo*100);
+      const opts=cand.filter(c=>Math.round(c.tot*100)===cents).map(c=>{const sim=nomeOk(b.nome,c.cli);return {...c,sim,sicuro:c.multi||sim};});
+      const buoni=opts.filter(o=>o.sicuro&&o.ids.every(id=>!usati.has(id)));
       let auto=null;
       if(buoni.length===1){auto=opts.indexOf(buoni[0]);buoni[0].ids.forEach(id=>usati.add(id));}
-      return {...b,opts,auto};
+      let reg=null;
+      if(!opts.some(o=>o.sicuro)){
+        const rp=candP.find(c=>Math.round(c.tot*100)===cents&&(c.multi||nomeOk(b.nome,c.cli))&&giorni(c.dp,b.data)<=45&&c.ids.every(id=>!usatiP.has(id)));
+        if(rp){reg=rp;rp.ids.forEach(id=>usatiP.add(id));}
+      }
+      return {...b,opts,auto,reg};
     });
   },[dbRows,servizi,clienti]);
 
+  const visibili=calc.filter(r=>!r.reg);
+  const registrati=calc.filter(r=>r.reg);
   const sc=r=>Object.prototype.hasOwnProperty.call(over,r.id)?over[r.id]:r.auto;
   const setScelta=(id,v)=>setOver(p=>({...p,[id]:v===""?null:Number(v)}));
-  const nSel=calc.filter(r=>sc(r)!==null).length;
-  const nSicure=calc.filter(r=>r.auto!==null).length;
+  const nSel=visibili.filter(r=>sc(r)!==null).length;
+  const nSicure=visibili.filter(r=>r.auto!==null).length;
 
   const leggi=async e=>{
     const f=e.target.files&&e.target.files[0];
@@ -96,7 +117,7 @@ export default function Banca({servizi,clienti,setServizi}){
   };
 
   const applica=async()=>{
-    const sel=calc.filter(r=>sc(r)!==null);
+    const sel=visibili.filter(r=>sc(r)!==null);
     const visti=new Set();
     for(const r of sel){for(const id of r.opts[sc(r)].ids){if(visti.has(id)){setErr("Lo stesso servizio e' scelto per due bonifici: correggi la scelta.");return;}visti.add(id);}}
     setBusy(true);setErr("");
@@ -117,17 +138,21 @@ export default function Banca({servizi,clienti,setServizi}){
   const chiudi=()=>{setOpen(false);setErr("");setEsito("");};
 
   return <div style={{marginBottom:10}}>
-    <button onClick={()=>{setOpen(true);setErr("");setEsito("");carica();}} style={{background:"#1e3a6e",border:"1px solid #3b82f6",color:"#60a5fa",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>🏦 Movimenti banca{dbRows.length>0?" ("+dbRows.length+")":""}</button>
+    <button onClick={()=>{setOpen(true);setErr("");setEsito("");carica();}} style={{background:"#1e3a6e",border:"1px solid #3b82f6",color:"#60a5fa",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>🏦 Movimenti banca{visibili.length>0?" ("+visibili.length+")":""}</button>
     {open&&<Modal title="Movimenti banca" onClose={chiudi}>
-      <div style={{color:"#8892a4",fontSize:13,marginBottom:8}}>Carica il CSV di Hype Business: i bonifici restano salvati e vengono confrontati con i servizi non pagati. Nulla viene segnato come pagato finche' non confermi.</div>
+      <div style={{color:"#8892a4",fontSize:13,marginBottom:8}}>Carica il CSV di Hype Business: i bonifici restano salvati e vengono confrontati con i servizi. Nulla viene segnato come pagato finche' non confermi.</div>
       <label style={{display:"flex",alignItems:"center",gap:8,color:"#c8d3e0",fontSize:13,marginBottom:8}}><input type="checkbox" checked={giaCtrl} onChange={e=>setGiaCtrl(e.target.checked)}/> Gia' controllati a mano (salvali come gia' gestiti)</label>
       <input type="file" accept=".csv,text/csv" disabled={busy} onChange={leggi}/>
       {err&&<div style={{color:"#f87171",fontSize:13,marginTop:10}}>{err}</div>}
       {esito&&<div style={{color:"#4ade80",fontSize:13,marginTop:10}}>{esito}</div>}
-      <div style={{color:"#e8d5a3",fontSize:13,fontWeight:700,margin:"14px 0 8px"}}>Da abbinare: {calc.length} · abbinamenti sicuri: {nSicure}</div>
-      {calc.length===0&&<div style={{color:"#8892a4",fontSize:12}}>Nessun bonifico da abbinare.</div>}
-      {calc.length>0&&<div style={{color:"#8892a4",fontSize:12,marginBottom:8}}>✓ = nome simile al committente, ? = solo importo uguale. Le righe verdi sono gia' abbinate: controllale prima di confermare.</div>}
-      {calc.map(r=>{
+      <div style={{color:"#e8d5a3",fontSize:13,fontWeight:700,margin:"14px 0 8px"}}>Da abbinare: {visibili.length} · abbinamenti sicuri: {nSicure}</div>
+      {registrati.length>0&&<div style={{marginBottom:10}}>
+        <button onClick={()=>setShowReg(v=>!v)} style={{background:"none",border:"1px solid #2d3550",color:"#8892a4",borderRadius:4,padding:"3px 10px",cursor:"pointer",fontSize:12}}>{showReg?"Nascondi":"Mostra"} gia' registrati ({registrati.length})</button>
+        {showReg&&registrati.map(r=><div key={r.id} style={{fontSize:12,color:"#8892a4",padding:"5px 0",borderBottom:"1px solid #2d3550"}}>{fmtD(r.data)} — {r.nome} · {fmt(r.importo)} → {r.reg.ids.length} {r.reg.ids.length===1?"servizio":"servizi"} gia' pagati ({r.reg.cli}, pagati il {fmtD(r.reg.dp)})</div>)}
+      </div>}
+      {visibili.length===0&&<div style={{color:"#8892a4",fontSize:12}}>Nessun bonifico da abbinare.</div>}
+      {visibili.length>0&&<div style={{color:"#8892a4",fontSize:12,marginBottom:8}}>✓ = nome simile al committente, = fattura con lo stesso totale, ? = solo importo uguale. Le righe verdi sono gia' abbinate: controllale prima di confermare.</div>}
+      {visibili.map(r=>{
         const s=sc(r);const sel=s!==null;
         return <div key={r.id} style={{border:"1px solid "+(sel?"#4ade8066":"#2d3550"),background:sel?"#0d2a1a":"#0f1320",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
@@ -141,14 +166,14 @@ export default function Banca({servizi,clienti,setServizi}){
             </div>
           </div>
           {r.opts.length===0
-            ?<div style={{color:"#fbbf24",fontSize:12,marginTop:6}}>Nessun servizio non pagato con questo importo: per ora resta da abbinare.</div>
+            ?<div style={{color:"#fbbf24",fontSize:12,marginTop:6}}>Nessun servizio non pagato con questo importo, e non risulta gia' registrato: da controllare.</div>
             :<select style={{...S.inp,marginTop:6}} value={s===null?"":String(s)} onChange={e=>setScelta(r.id,e.target.value)}>
               <option value="">— non abbinare —</option>
-              {r.opts.map((o,k)=><option key={k} value={String(k)}>{(o.nomeOk?"✓ ":"? ")+o.cli+" · "+o.label}</option>)}
+              {r.opts.map((o,k)=><option key={k} value={String(k)}>{(o.sim?"✓ ":o.multi?"= ":"? ")+o.cli+" · "+o.label}</option>)}
             </select>}
         </div>;
       })}
-      {calc.length>0&&<button disabled={nSel===0||busy} onClick={applica} style={{background:nSel===0||busy?"#2d3550":"#16a34a",border:"none",color:"white",borderRadius:6,padding:"8px 14px",cursor:nSel===0||busy?"default":"pointer",fontSize:13,fontWeight:700,marginTop:4}}>{busy?"Salvataggio...":"Segna come pagati ("+nSel+")"}</button>}
+      {visibili.length>0&&<button disabled={nSel===0||busy} onClick={applica} style={{background:nSel===0||busy?"#2d3550":"#16a34a",border:"none",color:"white",borderRadius:6,padding:"8px 14px",cursor:nSel===0||busy?"default":"pointer",fontSize:13,fontWeight:700,marginTop:4}}>{busy?"Salvataggio...":"Segna come pagati ("+nSel+")"}</button>}
     </Modal>}
   </div>;
 }
