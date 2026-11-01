@@ -174,6 +174,7 @@ function Servizi({servizi,setServizi,clienti,driver,anno,bozza,onBozzaUsata,apri
     </div>
     <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10,padding:"6px 10px",background:"#1a1f2e",borderRadius:6,border:"1px solid #2d3550"}}>
       <span style={{color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16}}>Totale: {fmt(filtered.reduce((a,s)=>a+prezzoLordo(s),0))}</span>
+      {filtered.reduce((a,s)=>a+(parseFloat(s.mancia)||0),0)>0&&<span style={{color:"#e8d5a3",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,marginLeft:10}}>+ mance {fmt(filtered.reduce((a,s)=>a+(parseFloat(s.mancia)||0),0))}</span>}
     </div>
 
     {filtered.map(s=>{
