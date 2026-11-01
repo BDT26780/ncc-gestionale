@@ -109,3 +109,15 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* === iPad Air 13" / iPad Pro 12.9"+ : schermo largo, solo touch === */
+@media (min-width: 1300px) and (hover: none) and (pointer: coarse) {
+  #root {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-inline: none !important;
+  }
+  [style*="max-width: 1200px"] {
+    max-width: none !important;
+  }
+}
