@@ -6,6 +6,7 @@ import Preventivi from "./Preventivi.jsx";
 import Spese from "./Spese.jsx";
 import Servizi from "./Servizi.jsx";
 import Calendario from "./Calendario.jsx";
+import Banca from "./Banca.jsx";
 import logoBDT from "./bdt-logo.png";
 // ── IVA TRIMESTRALE ───────────────────────────────────────────────────────────
 const TRIM=[
@@ -359,6 +360,7 @@ function DaPagare({servizi,clienti,driver,setServizi,onApriServizio}){
   const totDovuto=tot+inFatturaList.filter(s=>(!filtroC||s.committenteId===filtroC)&&matchTesto(s)).reduce((a,s)=>a+prezzoLordo(s),0);
   return <div>
     <h2 style={{...S.gld,marginTop:0}}>Da Pagare</h2>
+    <Banca servizi={servizi} clienti={clienti} setServizi={setServizi}/>
     <div style={{display:"flex",gap:10,marginBottom:10,alignItems:"center",flexWrap:"wrap"}}>
       <select style={{...S.inp,flex:1,minWidth:180}} value={filtroC} onChange={e=>setFiltroC(e.target.value)}>
         <option value="">Tutti i committenti</option>
