@@ -52,10 +52,12 @@ export default function Banca({servizi,clienti,setServizi}){
     const somma=g=>g.reduce((a,s)=>a+prezzoLordo(s),0);
     const d10=x=>String(x||"").slice(0,10);
     const aperti=servizi.filter(s=>!s.dataPagamento&&s.data&&s.data<=today());
-    const cand=aperti.map(s=>({ids:[s.id],multi:false,tot:prezzoLordo(s),cli:cliNome(s.committenteId),label:fmtD(s.data)+" "+(s.nomeUtente||"—")+" · "+(s.pickup||"—")+" → "+(s.dropoff||"—")}));
+    const grKey=s=>s.gruppoFattura||("legacy-"+(s.committenteId||"none"));
+    const nGr={};aperti.filter(s=>s.inFattura).forEach(s=>{nGr[grKey(s)]=(nGr[grKey(s)]||0)+1;});
+    const cand=aperti.filter(s=>!(s.inFattura&&nGr[grKey(s)]>1)).map(s=>({ids:[s.id],multi:false,dmax:s.data,tot:prezzoLordo(s),cli:cliNome(s.committenteId),label:fmtD(s.data)+" "+(s.nomeUtente||"—")+" · "+(s.pickup||"—")+" → "+(s.dropoff||"—")}));
     const gr={};
     aperti.filter(s=>s.inFattura).forEach(s=>{const k=s.gruppoFattura||("legacy-"+(s.committenteId||"none"));(gr[k]=gr[k]||[]).push(s);});
-    Object.keys(gr).forEach(k=>{const g=gr[k];if(g.length>1)cand.push({ids:g.map(s=>s.id),multi:true,tot:somma(g),cli:cliNome(g[0].committenteId),label:"Fattura in corso: "+g.length+" servizi"});});
+    Object.keys(gr).forEach(k=>{const g=gr[k];if(g.length>1)cand.push({ids:g.map(s=>s.id),multi:true,dmax:g.map(s=>s.data).sort().pop(),tot:somma(g),cli:cliNome(g[0].committenteId),label:"Fattura in corso: "+g.length+" servizi"});});
     const pagati=servizi.filter(s=>s.dataPagamento&&s.metodoPagamento==="bonifico");
     const candP=pagati.map(s=>({ids:[s.id],multi:false,tot:prezzoLordo(s),cli:cliNome(s.committenteId),dp:d10(s.dataPagamento)}));
     const gp={},gd={};
@@ -69,13 +71,13 @@ export default function Banca({servizi,clienti,setServizi}){
     const usati=new Set(),usatiP=new Set();
     return dbRows.map(b=>{
       const cents=Math.round(b.importo*100);
-      const opts=cand.filter(c=>Math.round(c.tot*100)===cents).map(c=>{const sim=nomeOk(b.nome,c.cli);return {...c,sim,sicuro:c.multi||sim};});
+      const opts=cand.filter(c=>Math.round(c.tot*100)===cents&&String(c.dmax||"")<b.data).map(c=>{const sim=nomeOk(b.nome,c.cli);return {...c,sim,sicuro:c.multi||sim};});
       const buoni=opts.filter(o=>o.sicuro&&o.ids.every(id=>!usati.has(id)));
       let auto=null;
       if(buoni.length===1){auto=opts.indexOf(buoni[0]);buoni[0].ids.forEach(id=>usati.add(id));}
       let reg=null;
       if(!opts.some(o=>o.sicuro)){
-        const rp=candP.find(c=>Math.round(c.tot*100)===cents&&(c.multi||nomeOk(b.nome,c.cli))&&giorni(c.dp,b.data)<=45&&c.ids.every(id=>!usatiP.has(id)));
+        const rp=candP.find(c=>Math.round(c.tot*100)===cents&&(c.multi||nomeOk(b.nome,c.cli))&&(new Date(c.dp)-new Date(b.data))/86400000>=-45&&c.ids.every(id=>!usatiP.has(id)));
         if(rp){reg=rp;rp.ids.forEach(id=>usatiP.add(id));}
       }
       return {...b,opts,auto,reg};
