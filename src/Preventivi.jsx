@@ -312,13 +312,13 @@ function Preventivi({refreshTick=0,onCreaServizio,clienti=[]}){
       <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
         <tbody>
           <tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
-            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Totale servizi</td><td/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right"}}>{fmt(cc.sub)}</td>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Totale servizi</td><td style={{padding:"6px 8px",border:"1px solid #bbb"}}/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right"}}>{fmt(cc.sub)}</td>
           </tr>
           {(parseFloat(prev.scontoGlobale)||0)>0&&<tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
-            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Sconto {prev.scontoGlobale}%</td><td/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right",color:"#c00"}}>- {fmt(cc.sgAbs)}</td>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Sconto {prev.scontoGlobale}%</td><td style={{padding:"6px 8px",border:"1px solid #bbb"}}/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right",color:"#c00"}}>- {fmt(cc.sgAbs)}</td>
           </tr>}
           <tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
-            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Subtotale</td><td/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right"}}>{fmt(cc.dopoSc)}</td>
+            <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>Subtotale</td><td style={{padding:"6px 8px",border:"1px solid #bbb"}}/><td style={{padding:"6px 8px",border:"1px solid #bbb",textAlign:"right"}}>{fmt(cc.dopoSc)}</td>
           </tr>
           <tr style={{fontWeight:"bold",background:"#f5f5f5"}}>
             <td style={{padding:"6px 8px",border:"1px solid #bbb"}}>IVA</td>
