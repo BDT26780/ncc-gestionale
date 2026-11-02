@@ -241,8 +241,8 @@ function Preventivi({refreshTick=0,onCreaServizio,clienti=[]}){
         <button onClick={()=>setAnteprimaPrev(null)} style={{background:"#f0f0f0",border:"1px solid #ccc",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13}}>← Torna</button>
         <button onClick={()=>{
           const w=window.open("","_blank");
-          w.document.write("<html><head><title>Preventivo</title><style>body{font-family:Arial,sans-serif;font-size:13px;color:#000;padding:28px;margin:0}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:6px 10px}@media print{.no-print{display:none}}</style></head><body>");
-          w.document.write(document.querySelector("[data-preventivo]").innerHTML);
+          w.document.write("<html><head><title>Preventivo</title><style>@page{size:A4;margin:18mm 15mm}body{font-family:Arial,sans-serif;font-size:13px;color:#000;padding:0;margin:0}#pv{max-width:180mm;margin:0 auto}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:6px 10px}@media print{.no-print{display:none}}</style></head><body>");
+          w.document.write("<div id=\"pv\">"+document.querySelector("[data-preventivo]").innerHTML+"</div>");
           w.document.write("</body></html>");
           w.document.close();
           w.focus();
