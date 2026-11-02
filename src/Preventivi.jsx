@@ -62,7 +62,7 @@ async function loadPrevTariff(){
       prezzoTrasf:rt.data.prezzo_trasf||425,
       prezzoOra:rt.data.prezzo_ora||50,
       pedaggioStd:rt.data.pedaggio_std||13,
-      iva:rt.data.iva||10,
+      iva:rt.data.iva||10,firma:rt.data.firma||"",
     }:{prezzoTrasf:425,prezzoOra:50,pedaggioStd:13,iva:10};
     return{preventivi,tariff};
   }catch(e){
@@ -332,7 +332,8 @@ function Preventivi({refreshTick=0,onCreaServizio}){
       <div style={{marginTop:30,textAlign:"right",fontWeight:"bold",lineHeight:1.9}}>
         <div>{AZIENDA.nome}</div>
         <div>{AZIENDA.firmatario}</div>
-        <div style={{marginTop:20,height:50,borderBottom:"1px solid #111",width:200,marginLeft:"auto"}}/>
+        {tariff.firma&&<img src={tariff.firma} alt="" style={{display:"block",height:60,marginLeft:"auto",marginTop:8,marginBottom:-8}}/>}
+        <div style={{marginTop:tariff.firma?0:20,height:tariff.firma?0:50,borderBottom:"1px solid #111",width:200,marginLeft:"auto"}}/>
       </div>
     </div>;
   }
