@@ -30,6 +30,18 @@ const calcolaPrev=(f,tariff)=>{
   return{sub,sgAbs:sub*sg,dopoSc,iva,tot:dopoSc+iva};
 };
 
+const descRiga=r=>{
+  let d=(r.descrizione||"").trim();
+  if(r.tipo==="trasferimento"){
+    const da=(r.da||"").trim(),a=(r.a||"").trim();
+    if((da||a)&&!(da&&d.includes(da))&&!(a&&d.includes(a)))d+=(d?": ":"")+(da||"...")+" \u2192 "+(a||"...");
+  }else if(r.tipo==="disposizione"){
+    const n=parseFloat(r.qta)||1;
+    if(!/\b(ora|ore)\b/i.test(d))d+=(d?" - ":"")+String(n).replace(".",",")+(n===1?" ora":" ore");
+  }
+  return d;
+};
+
 async function loadPrevTariff(){
   try{
     const[rp,rt]=await Promise.all([
@@ -199,9 +211,9 @@ function Preventivi({refreshTick=0,onCreaServizio}){
       "_Preventivo "+prev.id+"_","",
       "Gentile "+prev.clienteNome+",",
       "Le inviamo il preventivo per il servizio richiesto:","",
-      ...righeVis.map(r=>"- "+r.descrizione+": "+eur+fmt((parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1))),
+      ...righeVis.map(r=>"- "+descRiga(r)+": "+fmt((parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1))),
       "",
-      "Totale IVA inclusa: *"+eur+fmt(c.tot)+"*","",
+      "Totale IVA inclusa: *"+fmt(c.tot)+"*","",
       "Per accettare risponda OK a questo messaggio.","",
       "Black Diamond Transfert",
     ].join("\n");
@@ -259,7 +271,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
         PREVENTIVO SERVIZIO CON {prev.veicolo||"VEICOLO NCC"}
       </div>
       {prev.giornoServizio&&<div style={{fontWeight:"bold",marginBottom:8}}>
-        GIORNO {new Date(prev.giornoServizio).toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric"})} — {prev.titoloServizio||""}
+        GIORNO {new Date(prev.giornoServizio).toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric"})}{prev.titoloServizio?" — "+prev.titoloServizio:""}
       </div>}
       <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
         <thead>
@@ -278,7 +290,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
             return <React.Fragment key={r.id}>
               <tr>
                 <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,verticalAlign:"top"}}>{r.tipo==="trasferimento"?"Trasferimento":r.tipo==="disposizione"?"Disposizione oraria":r.tipo==="pedaggio"?"Pedaggio":""}</td>
-                <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,verticalAlign:"top"}}>{r.descrizione}</td>
+                <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,verticalAlign:"top"}}>{descRiga(r)}</td>
                 <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,textAlign:"right"}}>{r.qta}</td>
                 <td style={{padding:"6px 8px",border:"1px solid #ccc",fontSize:12,textAlign:"right"}}>{fmt(netto)}</td>
               </tr>
@@ -308,7 +320,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
           </tr>
           <tr style={{fontWeight:"bold",fontSize:14,background:"#111",color:"#fff"}}>
             <td colSpan="2" style={{padding:"8px",border:"1px solid #333"}}>TOTALE</td>
-            <td style={{padding:"8px",border:"1px solid #333",textAlign:"right"}}>{eur} {fmt(cc.tot)}</td>
+            <td style={{padding:"8px",border:"1px solid #333",textAlign:"right"}}>{fmt(cc.tot)}</td>
           </tr>
         </tbody>
       </table>
@@ -361,7 +373,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
             <div style={{color:"#8892a4",fontSize:12}}>{p.righe?.filter(r=>!r.nascosta).length||0} voci</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-            <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700}}>{eur} {fmt(c.tot)}</div>
+            <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700}}>{fmt(c.tot)}</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
               <button onClick={()=>{setForm({...p});setModal("edit");}} style={{...S.bGr,padding:"5px 12px",fontSize:12}}>Modifica</button>
               <button onClick={()=>creaServizioDaPrev(p,c,tariff,onCreaServizio)} style={{background:"#1a3520",border:"1px solid #4ade8088",borderRadius:6,color:"#4ade80",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>→ Servizio</button>
@@ -424,7 +436,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
             <div style={{flex:"1 1 70px",textAlign:"right"}}>
               <div style={S.lbl}>Importo</div>
               <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontWeight:700,padding:"7px 0",fontSize:14}}>
-                {eur} {fmt((parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1)*(1-(parseFloat(r.sconto)||0)/100))}
+                {fmt((parseFloat(r.prezzoUnit)||0)*(parseFloat(r.qta)||1)*(1-(parseFloat(r.sconto)||0)/100))}
               </div>
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center",paddingBottom:2}}>
@@ -465,10 +477,10 @@ function Preventivi({refreshTick=0,onCreaServizio}){
           </div>
         </div>
         <div style={{borderTop:"1px solid #2d3550",paddingTop:8}}>
-          <div style={{display:"flex",justifyContent:"space-between",color:"#8892a4",fontSize:12,marginBottom:3}}><span>Subtotale</span><span>{eur} {fmt(calc.sub)}</span></div>
-          {(parseFloat(form.scontoGlobale)||0)>0&&<div style={{display:"flex",justifyContent:"space-between",color:"#f87171",fontSize:12,marginBottom:3}}><span>Sconto {form.scontoGlobale}%</span><span>- {eur} {fmt(calc.sgAbs)}</span></div>}
-          <div style={{display:"flex",justifyContent:"space-between",color:"#8892a4",fontSize:12,marginBottom:3}}><span>IVA {form.aliqIva||tariff.iva}%</span><span>{eur} {fmt(calc.iva)}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",color:"#4ade80",fontSize:16,fontWeight:700,fontFamily:"Georgia,serif",borderTop:"1px solid #2d3550",paddingTop:6,marginTop:4}}><span>TOTALE</span><span>{eur} {fmt(calc.tot)}</span></div>
+          <div style={{display:"flex",justifyContent:"space-between",color:"#8892a4",fontSize:12,marginBottom:3}}><span>Subtotale</span><span>{fmt(calc.sub)}</span></div>
+          {(parseFloat(form.scontoGlobale)||0)>0&&<div style={{display:"flex",justifyContent:"space-between",color:"#f87171",fontSize:12,marginBottom:3}}><span>Sconto {form.scontoGlobale}%</span><span>- {fmt(calc.sgAbs)}</span></div>}
+          <div style={{display:"flex",justifyContent:"space-between",color:"#8892a4",fontSize:12,marginBottom:3}}><span>IVA {form.aliqIva||tariff.iva}%</span><span>{fmt(calc.iva)}</span></div>
+          <div style={{display:"flex",justifyContent:"space-between",color:"#4ade80",fontSize:16,fontWeight:700,fontFamily:"Georgia,serif",borderTop:"1px solid #2d3550",paddingTop:6,marginTop:4}}><span>TOTALE</span><span>{fmt(calc.tot)}</span></div>
         </div>
       </div>
 
