@@ -30,6 +30,8 @@ const calcolaPrev=(f,tariff)=>{
   return{sub,sgAbs:sub*sg,dopoSc,iva,tot:dopoSc+iva};
 };
 
+const MSG={vitto:"Le spese di vitto e alloggio (hotel, pranzo e/o cena) qualora necessarie, sono a carico del cliente e non sono incluse nel presente preventivo.",conferma:"\u00c8 richiesta la conferma del preventivo in oggetto.",saluti:"Cordiali saluti"};
+const noteFinali=p=>{const m=p.msgStd||{};const a=[m.vitto&&MSG.vitto,m.conferma&&MSG.conferma].filter(Boolean).join(" ");return [a,(p.note||"").trim(),m.saluti&&MSG.saluti].filter(Boolean).join("\n");};
 const descRiga=r=>{
   let d=(r.descrizione||"").trim();
   if(r.tipo==="trasferimento"){
@@ -56,7 +58,7 @@ async function loadPrevTariff(){
       titoloServizio:r.titolo_servizio||"",aliqIva:r.aliq_iva||"",
       scontoGlobale:r.sconto_globale||"0",righe:r.righe_json||[],
       metodiPagamento:r.metodi_pagamento||"",note:r.note||"",
-      committenteId:r.committente_id||"",stato:r.stato||"bozza",
+      committenteId:r.committente_id||"",stato:r.stato||"bozza",msgStd:r.messaggi_std||null,
     }));
     const tariff=rt.data?{
       prezzoTrasf:rt.data.prezzo_trasf||425,
@@ -81,7 +83,7 @@ async function savePrevList(list){
     titolo_servizio:p.titoloServizio||null,aliq_iva:p.aliqIva||null,
     sconto_globale:p.scontoGlobale||"0",righe_json:p.righe||[],
     metodi_pagamento:p.metodiPagamento||null,note:p.note||null,
-    committente_id:p.committenteId||null,stato:p.stato||"bozza",
+    committente_id:p.committenteId||null,stato:p.stato||"bozza",messaggi_std:p.msgStd||null,
   })));
   if(error)console.error("savePrevList error:",error);
 }
@@ -129,7 +131,7 @@ const creaServizioDaPrev=(p,c,tariff,cb)=>{
   cb({data:p.giornoServizio||"",prezzo:c.tot.toFixed(2),pickup:pick||"",dropoff:drop||"",tipo,oreDisp:ore?Math.min(12,Math.max(1,Math.round(ore))):2,durataManuale:durata,tratte,note:"Da preventivo "+p.id+(p.titoloServizio?" — "+p.titoloServizio:"")+(vociNote?" · "+vociNote:""),committenteId:p.committenteId||"",clienteNome:p.clienteNome||""});
 };
 
-function Preventivi({refreshTick=0,onCreaServizio}){
+function Preventivi({refreshTick=0,onCreaServizio,clienti=[]}){
   const [preventivi,setPrevR]=useState([]);
   const [kmStatus,setKmStatus]=useState("");
   const [sugDa,setSugDa]=useState([]);
@@ -142,6 +144,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
   const [loaded,setLoaded]=useState(false);
   const [msg,setMsg]=useState("");
   const [anteprimaPrev,setAnteprimaPrev]=useState(null);
+  const [usaAnag,setUsaAnag]=useState(false);
 
   useEffect(()=>{(async()=>{
     const{preventivi:p,tariff:t}=await loadPrevTariff();
@@ -153,6 +156,10 @@ function Preventivi({refreshTick=0,onCreaServizio}){
     await savePrevList(list);
   };
   const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+  const scegliCliente=id=>{
+    const c=clienti.find(x=>x.id===id);
+    setForm(p=>c?({...p,committenteId:id,clienteNome:c.ragioneSociale||c.nome||"",clienteEmail:c.email||"",telefonoCli:c.telefono||"",clienteRef:c.referente||""}):({...p,committenteId:""}));
+  };
 
   useEffect(()=>{if(refreshTick>0){loadPrevTariff().then(({preventivi:p,tariff:t})=>{setPrevR(p);setTariff(t);});}},[refreshTick]);
   const nuovoPreventivo=()=>{
@@ -163,9 +170,9 @@ function Preventivi({refreshTick=0,onCreaServizio}){
       aliqIva:String(tariff.iva),scontoGlobale:"0",
       righe:[],
       metodiPagamento:"Bonifico bancario intestato a "+AZIENDA.intestatarioIBAN+"\nIBAN: "+AZIENDA.iban,
-      note:"Le spese di vitto e alloggio (hotel, pranzo e/o cena) qualora necessarie, sono a carico del cliente e non sono incluse nel presente preventivo. "+String.fromCharCode(200)+" richiesta la conferma del preventivo in oggetto.\nCordiali saluti",
+      note:"",msgStd:{vitto:true,conferma:true,saluti:true},committenteId:"",
     });
-    setModal("edit");
+    setUsaAnag(true);setModal("edit");
   };
 
   const addRiga=tipo=>{
@@ -327,7 +334,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
       <div style={{marginTop:18,fontSize:12,borderTop:"1px solid #bbb",paddingTop:10,lineHeight:1.7}}>
         <div><strong>MODALITÀ DI PAGAMENTO ACCETTATE:</strong></div>
         <div style={{marginTop:6,whiteSpace:"pre-line"}}>{prev.metodiPagamento||""}</div>
-        {prev.note&&<div style={{marginTop:12,fontStyle:"italic",whiteSpace:"pre-line"}}>{prev.note}</div>}
+        {noteFinali(prev)&&<div style={{marginTop:12,fontStyle:"italic",whiteSpace:"pre-line"}}>{noteFinali(prev)}</div>}
       </div>
       <div style={{marginTop:30,textAlign:"right",fontWeight:"bold",lineHeight:1.9}}>
         <div>{AZIENDA.nome}</div>
@@ -376,7 +383,7 @@ function Preventivi({refreshTick=0,onCreaServizio}){
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
             <div style={{color:"#4ade80",fontFamily:"Georgia,serif",fontSize:20,fontWeight:700}}>{fmt(c.tot)}</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-              <button onClick={()=>{setForm({...p});setModal("edit");}} style={{...S.bGr,padding:"5px 12px",fontSize:12}}>Modifica</button>
+              <button onClick={()=>{setForm({...p});setUsaAnag(!!p.committenteId);setModal("edit");}} style={{...S.bGr,padding:"5px 12px",fontSize:12}}>Modifica</button>
               <button onClick={()=>creaServizioDaPrev(p,c,tariff,onCreaServizio)} style={{background:"#1a3520",border:"1px solid #4ade8088",borderRadius:6,color:"#4ade80",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>→ Servizio</button>
               <button onClick={()=>stampaPDF(p)} style={{background:"#1a2a3a",border:"1px solid #3b82f6",borderRadius:6,color:"#60a5fa",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>PDF / Stampa</button>
               <button onClick={()=>inviaWA(p)} style={{background:"#1a3d20",border:"1px solid #25d36688",borderRadius:6,color:"#25d366",padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700}}>WhatsApp</button>
@@ -394,6 +401,8 @@ function Preventivi({refreshTick=0,onCreaServizio}){
         <F label="Data preventivo" w="50%"><input style={stData} type="date" value={form.data||""} onChange={set("data")}/></F>
         <F label="Validità (giorni)" w="50%"><input style={S.inp} type="number" value={form.validita||30} onChange={set("validita")}/></F>
       </div>
+      <label style={{display:"flex",alignItems:"center",gap:8,color:"#c8d3e0",fontSize:13,margin:"4px 0 10px",cursor:"pointer"}}><input type="checkbox" checked={usaAnag} onChange={e=>{setUsaAnag(e.target.checked);if(!e.target.checked)setForm(p=>({...p,committenteId:""}));}}/> Cliente gia' in anagrafica (prendi i dati da li)</label>
+      {usaAnag&&<F label="Cliente in anagrafica"><select style={S.inp} value={form.committenteId||""} onChange={e=>scegliCliente(e.target.value)}><option value="">— scegli il cliente —</option>{[...clienti].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"")).map(c=><option key={c.id} value={c.id}>{c.nome}{c.ragioneSociale&&c.ragioneSociale!==c.nome?" ("+c.ragioneSociale+")":""}</option>)}</select></F>}
       <F label="Nome Cliente / Spett.le"><input style={S.inp} value={form.clienteNome||""} onChange={set("clienteNome")} placeholder="Es. Rossi Mario o Azienda Srl"/></F>
       <div style={{display:"flex",gap:10}}>
         <F label="Email cliente" w="55%"><input style={S.inp} type="email" value={form.clienteEmail||""} onChange={set("clienteEmail")}/></F>
@@ -486,7 +495,9 @@ function Preventivi({refreshTick=0,onCreaServizio}){
       </div>
 
       <F label="Modalità di pagamento"><textarea style={{...S.inp,minHeight:55,resize:"vertical"}} value={form.metodiPagamento||""} onChange={set("metodiPagamento")}/></F>
-      <F label="Note (visibili al cliente)"><textarea style={{...S.inp,minHeight:65,resize:"vertical"}} value={form.note||""} onChange={set("note")}/></F>
+      <div style={S.lbl}>Messaggi sul preventivo (visibili al cliente)</div>
+      {[["vitto","Spese di vitto e alloggio a carico del cliente"],["conferma","Richiesta di conferma del preventivo"],["saluti","Cordiali saluti"]].map(([k,l])=>(<label key={k} style={{display:"flex",alignItems:"center",gap:8,color:"#c8d3e0",fontSize:13,margin:"4px 0",cursor:"pointer"}}><input type="checkbox" checked={!!(form.msgStd||{})[k]} onChange={e=>setForm(p=>({...p,msgStd:{...(p.msgStd||{}),[k]:e.target.checked}}))}/>{l}</label>))}
+      <F label="Messaggio personalizzato (scrivilo tu)"><textarea style={{...S.inp,minHeight:65,resize:"vertical"}} value={form.note||""} onChange={set("note")} placeholder="Testo solo per questo preventivo"/></F>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10,gap:8,flexWrap:"wrap"}}>
         <button style={{...S.bGr,fontSize:12}} onClick={()=>stampaPDF(form)}>Anteprima PDF</button>
         <div style={{display:"flex",gap:8}}>

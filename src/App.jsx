@@ -822,7 +822,7 @@ function AppContent(){
       {page==="servizi"&&<Servizi servizi={srvF} setServizi={setServizi} clienti={clienti} driver={driver} anno={anno} bozza={bozzaServizio} onBozzaUsata={()=>setBozzaServizio(null)} apriId={apriServizioId} onApriUsato={()=>setApriServizioId(null)}/>}
       {page==="dapagare"&&<DaPagare servizi={srvF} clienti={clienti} driver={driver} setServizi={setServizi} onApriServizio={id=>{setApriServizioId(id);setPage("servizi");}}/>}
       {page==="spese"&&<Spese spese={spF} setSpese={setSpese} driver={driver} anno={anno}/>}
-      {page==="preventivi"&&<Preventivi refreshTick={refreshTick} onCreaServizio={daPreventivoAServizio}/>}
+      {page==="preventivi"&&<Preventivi refreshTick={refreshTick} onCreaServizio={daPreventivoAServizio} clienti={clienti}/>}
       {page==="clienti"&&<Clienti clienti={clienti} setClienti={setClienti} servizi={servizi}/>}
       {page==="driver"&&<Driver driver={driver} setDriver={setDriver}/>}
       {page==="report"&&<Report servizi={srvF} spese={spF} clienti={clienti} driver={driver} anno={anno}/>}
