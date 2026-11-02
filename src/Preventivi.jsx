@@ -239,15 +239,31 @@ function Preventivi({refreshTick=0,onCreaServizio,clienti=[]}){
     return <div data-preventivo="true" style={{background:"#fff",minHeight:"100vh",fontFamily:"Arial,sans-serif",fontSize:13,color:"#111",padding:28,margin:"-18px"}}>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:20,borderBottom:"1px solid #ddd",paddingBottom:12}} className="no-print">
         <button onClick={()=>setAnteprimaPrev(null)} style={{background:"#f0f0f0",border:"1px solid #ccc",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13}}>← Torna</button>
-        <button onClick={()=>{
-          document.querySelectorAll(".pv-fr").forEach(x=>x.remove());const fr=document.createElement("iframe");fr.className="pv-fr";fr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(fr);const w=fr.contentWindow;
-          w.document.write("<html><head><title>Preventivo</title><style>@page{size:A4;margin:0}body{font-family:Arial,sans-serif;font-size:13px;color:#000;padding:0;margin:0}#pvw{display:table;width:100%;height:296mm}#pvc{display:table-cell;vertical-align:middle;padding:18mm 15mm}#pv{max-width:180mm;margin:0 auto}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:6px 10px}@media print{.no-print{display:none}}</style></head><body>");
-          w.document.write("<div id=\"pvw\"><div id=\"pvc\"><div id=\"pv\">"+document.querySelector("[data-preventivo]").innerHTML+"</div></div></div>");
-          w.document.write("</body></html>");
-          w.document.close();
-          w.focus();
-          setTimeout(()=>w.print(),500);
-        }} style={{background:"#111",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>🖨 Stampa / Salva PDF</button>
+        <button onClick={async(e)=>{
+          const btn=e.currentTarget;const lab=btn.textContent;btn.textContent="Creo il PDF...";btn.disabled=true;
+          let box=null,wrap=null;
+          try{
+            const html2pdf=(await import("html2pdf.js")).default;
+            box=document.querySelector("[data-preventivo]").cloneNode(true);
+            box.querySelectorAll(".no-print").forEach(n=>n.remove());
+            box.style.cssText="-webkit-text-size-adjust:none;text-size-adjust:none;width:680px;background:#fff;font-family:Arial,sans-serif;font-size:13px;color:#111;padding:0;margin:0;min-height:0";
+            wrap=document.createElement("div");wrap.style.cssText="position:fixed;left:-10000px;top:0;-webkit-text-size-adjust:none;text-size-adjust:none";wrap.appendChild(box);
+            document.body.appendChild(wrap);
+            await new Promise(r=>setTimeout(r,300));
+            const h=box.offsetHeight;
+            if(h<1000){box.style.paddingTop=Math.floor((1000-h)/2)+"px";}
+            const nome="Preventivo_"+String(prev.clienteNome||"").replace(/[^A-Za-z0-9]+/g,"_")+"_"+(prev.data||"")+".pdf";
+            const opt={margin:[15,15,15,15],filename:nome,image:{type:"jpeg",quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","img",".pv-keep"]}};
+            const blob=await html2pdf().set(opt).from(box).outputPdf("blob");
+            const file=new File([blob],nome,{type:"application/pdf"});
+            let fatto=false;
+            if(navigator.canShare&&navigator.canShare({files:[file]})){
+              try{await navigator.share({files:[file]});fatto=true;}catch(err){if(err&&err.name==="AbortError")fatto=true;}
+            }
+            if(!fatto){const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);}
+          }catch(err){alert("Errore nella creazione del PDF: "+(err&&err.message?err.message:err));}
+          finally{if(wrap)wrap.remove();btn.textContent=lab;btn.disabled=false;}
+        }} style={{background:"#111",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>⬇ Scarica PDF</button>
         {prev.telefonoCli&&<button onClick={()=>{const tel=(prev.telefonoCli||"").replace(/[^0-9]/g,"").replace(/^00/,"");const msg="Gentile "+prev.clienteNome+",\ncome concordato Le invio in allegato il preventivo n. "+prev.id+" di Black Diamond Transfert.\nResto a disposizione per qualsiasi informazione.\nCordiali saluti,\nBlack Diamond Transfert";window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(msg),"_blank");}} style={{background:"#25d366",color:"#fff",border:"none",borderRadius:6,padding:"7px 20px",cursor:"pointer",fontSize:13,fontWeight:700}}>📤 Invia via WhatsApp</button>}
       </div>
       <style>{`
@@ -336,11 +352,11 @@ function Preventivi({refreshTick=0,onCreaServizio,clienti=[]}){
         <div style={{marginTop:6,whiteSpace:"pre-line"}}>{prev.metodiPagamento||""}</div>
         {noteFinali(prev)&&<div style={{marginTop:12,fontStyle:"italic",whiteSpace:"pre-line"}}>{noteFinali(prev)}</div>}
       </div>
-      <div style={{marginTop:30,textAlign:"right",fontWeight:"bold",lineHeight:1.9}}>
+      <div className="pv-keep" style={{marginTop:30,textAlign:"right",fontWeight:"bold",lineHeight:1.9}}>
         <div>{AZIENDA.nome}</div>
         <div>{AZIENDA.firmatario}</div>
-        {tariff.firma&&<img src={tariff.firma} alt="" style={{display:"block",height:60,marginLeft:"auto",marginTop:8,marginBottom:-8}}/>}
-        <div style={{marginTop:tariff.firma?0:20,height:tariff.firma?0:50,borderBottom:"1px solid #111",width:200,marginLeft:"auto"}}/>
+        {tariff.firma&&<img src={tariff.firma} alt="" style={{display:"block",height:60,marginLeft:"auto",marginTop:8,marginBottom:0}}/>}
+        <div style={{marginTop:tariff.firma?0:20,height:tariff.firma?0:50,borderBottom:tariff.firma?"none":"1px solid #111",width:200,marginLeft:"auto"}}/>
       </div>
     </div>;
   }
