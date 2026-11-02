@@ -240,9 +240,9 @@ function Preventivi({refreshTick=0,onCreaServizio,clienti=[]}){
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginBottom:20,borderBottom:"1px solid #ddd",paddingBottom:12}} className="no-print">
         <button onClick={()=>setAnteprimaPrev(null)} style={{background:"#f0f0f0",border:"1px solid #ccc",borderRadius:6,padding:"7px 16px",cursor:"pointer",fontSize:13}}>← Torna</button>
         <button onClick={()=>{
-          const w=window.open("","_blank");
-          w.document.write("<html><head><title>Preventivo</title><style>@page{size:A4;margin:18mm 15mm}body{font-family:Arial,sans-serif;font-size:13px;color:#000;padding:0;margin:0}#pv{max-width:180mm;margin:0 auto}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:6px 10px}@media print{.no-print{display:none}}</style></head><body>");
-          w.document.write("<div id=\"pv\">"+document.querySelector("[data-preventivo]").innerHTML+"</div>");
+          document.querySelectorAll(".pv-fr").forEach(x=>x.remove());const fr=document.createElement("iframe");fr.className="pv-fr";fr.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(fr);const w=fr.contentWindow;
+          w.document.write("<html><head><title>Preventivo</title><style>@page{size:A4;margin:0}body{font-family:Arial,sans-serif;font-size:13px;color:#000;padding:0;margin:0}#pvw{display:table;width:100%;height:296mm}#pvc{display:table-cell;vertical-align:middle;padding:18mm 15mm}#pv{max-width:180mm;margin:0 auto}table{width:100%;border-collapse:collapse}td,th{border:1px solid #999;padding:6px 10px}@media print{.no-print{display:none}}</style></head><body>");
+          w.document.write("<div id=\"pvw\"><div id=\"pvc\"><div id=\"pv\">"+document.querySelector("[data-preventivo]").innerHTML+"</div></div></div>");
           w.document.write("</body></html>");
           w.document.close();
           w.focus();
