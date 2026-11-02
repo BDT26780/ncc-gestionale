@@ -11,7 +11,7 @@ const AZIENDA={
   email:"blackdiamondtransfert@gmail.com",
   cell:"0039 3806543014",
   web:"www.blackdiamondtransfert.it",
-  iban:"IT41S36772223000EM002528613",
+  iban:"IT74R03268223000EMH02528613",
   intestatarioIBAN:"BLACK DIAMOND TRANSFERT DI MURRAY ESTHER",
   firmatario:"Esther Murray",
 };
@@ -257,7 +257,7 @@ function Preventivi({refreshTick=0,onCreaServizio,clienti=[]}){
             const blob=await html2pdf().set(opt).from(box).outputPdf("blob");
             const file=new File([blob],nome,{type:"application/pdf"});
             let fatto=false;
-            if(navigator.canShare&&navigator.canShare({files:[file]})){
+            if(navigator.maxTouchPoints>1&&navigator.canShare&&navigator.canShare({files:[file]})){
               try{await navigator.share({files:[file]});fatto=true;}catch(err){if(err&&err.name==="AbortError")fatto=true;}
             }
             if(!fatto){const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);}
